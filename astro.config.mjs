@@ -36,9 +36,9 @@ import { remarkImageGrid } from "./src/plugins/remark-image-grid.js";
 
 // https://astro.build/config
 export default defineConfig({
-	site: siteConfig.site_url,
+	site: "https://L-lty.github.io",
 
-	base: "/",
+	base: "/Leoblog",
 	trailingSlash: "always",
 
 	// 图像优化配置
