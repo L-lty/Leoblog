@@ -25,7 +25,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 	if (siteConfig.pages.guestbook) {
 		links.push(LinkPreset.Guestbook);
 	}
-
+	/*
 	// 我的及其子菜单
 	links.push({
 		name: "我的",
@@ -39,7 +39,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			...(siteConfig.pages.bangumi ? [LinkPreset.Bangumi] : []),
 		],
 	});
-
+	*/
 	// 关于及其子菜单
 	links.push({
 		name: "关于",
@@ -68,18 +68,22 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 				external: true,
 				icon: "fa7-brands:github",
 			},
+			/*
 			{
 				name: "Gitee",
 				url: "https://gitee.com/CuteLeaf/Firefly",
 				external: true,
 				icon: "fa7-brands:gitee",
 			},
+			*/
+			/*
 			{
 				name: "QQ交流群",
 				url: "https://qm.qq.com/q/ZGsFa8qX2G",
 				external: true,
 				icon: "fa7-brands:qq",
 			},
+			*/
 		],
 	});
 
