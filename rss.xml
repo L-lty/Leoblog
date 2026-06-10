@@ -1,4 +1,594 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Firefly</title><description>Demo site</description><link>https://l-lty.github.io/</link><templateTheme>Firefly</templateTheme><templateThemeVersion>6.7.15</templateThemeVersion><templateThemeUrl>https://github.com/CuteLeaf/Firefly</templateThemeUrl><lastBuildDate>2026年4月18日 21:01:01</lastBuildDate><item><title>Agent 原理、架构与工程实践</title><link>https://l-lty.github.io/Leoblog/posts/agent/agent/</link><guid isPermaLink="true">https://l-lty.github.io/Leoblog/posts/agent/agent/</guid><description>大语言模型（LLM）是一个被关在小黑屋里、只有个聪明大脑的“缸中之脑”；而 Agent，就是给这个大脑装上了记忆、感官和手脚，让它能够主动去现实世界中打工的“数字员工”。</description><pubDate>Fri, 20 Mar 2026 00:00:00 GMT</pubDate><content:encoded>&lt;section&gt;&lt;h2&gt;引言&lt;a href=&quot;#引言&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;这篇文章主要是Agent架构里几块最影响工程效果的内容，包括控制流、上下文工程、工具设计、记忆、多Agent组织、评测、追踪和安全。&lt;/p&gt;&lt;/section&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Firefly</title><description>Demo site</description><link>https://l-lty.github.io/</link><templateTheme>Firefly</templateTheme><templateThemeVersion>6.7.15</templateThemeVersion><templateThemeUrl>https://github.com/CuteLeaf/Firefly</templateThemeUrl><lastBuildDate>2026年6月10日 18:29:24</lastBuildDate><item><title>前沿部署工程师 FDE</title><link>https://l-lty.github.io/Leoblog/posts/fde/</link><guid isPermaLink="true">https://l-lty.github.io/Leoblog/posts/fde/</guid><description>在 AI 时代，模型能力越强大，前线部署工程师（FDE）反而越不可或缺，因为他们正是将前沿技术真正转化为复杂商业价值的终极破局者</description><pubDate>Wed, 10 Jun 2026 00:00:00 GMT</pubDate><content:encoded>&lt;div&gt;&lt;div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&gt;一句话概括&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;p&gt;模型越强，越需要有人把它带进真实世界。FDE 的价值不在于“写更多代码”，而在于把前沿 AI 能力翻译成客户现场真正能跑、能用、能产生收益的系统。&lt;/p&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;FDE（Forward Deployed Engineer，前沿部署工程师）最早由 Palantir 提出。它不是传统意义上的前端、后端或售前岗位，而是一种直接扎进客户现场、理解业务约束、解决复杂问题的新型工程角色。&lt;/p&gt;
+&lt;p&gt;在 AI 时代，这个角色变得更关键了：模型能力越来越强，但企业真实环境里有遗留系统、组织流程、数据孤岛、合规限制和一堆非标准工作流。把模型真正嵌进去，仍然需要有人打通“最后一公里”。&lt;/p&gt;
+&lt;hr /&gt;
+&lt;section&gt;&lt;h2&gt;一、什么是 FDE？&lt;a href=&quot;#一什么是-fde&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;结合 Palantir、Ramp、Nominal、Dataland、OpenAI 等公司的实践，FDE 可以被理解为三种角色的叠加：&lt;/p&gt;&lt;section&gt;&lt;h3&gt;1. 驻场一线的“双语者”&lt;a href=&quot;#1-驻场一线的双语者&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;FDE 不坐在后方等待需求，而是直接进入客户的工厂、医院、金融机构或其他业务现场。&lt;/p&gt;&lt;p&gt;他们既要懂底层架构、代码和系统集成，也要听得懂行业黑话、业务流程和组织里的隐性规则。真正的难点不是“把功能做出来”，而是在约束极多的现实环境里，把技术转化成可用的解决方案。&lt;/p&gt;&lt;/section&gt;&lt;section&gt;&lt;h3&gt;2. 以结果为导向的定制化构建者&lt;a href=&quot;#2-以结果为导向的定制化构建者&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;不同公司对 FDE 的定义略有差异，但共同点都是：&lt;strong&gt;为客户创造实际价值&lt;/strong&gt;。&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;Ramp 强调“不受限地为赢下大企业客户负责”。&lt;/li&gt;
+&lt;li&gt;Nominal 关注如何帮助硬件工程师解锁关键工作流。&lt;/li&gt;
+&lt;li&gt;Dataland 将 FDE 视为业务本体，通过高度异构的系统贴合各行业具体劳动需求。&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;FDE 不是简单交付标准产品，而是通过深度理解场景，确保最终结果真的落地。&lt;/p&gt;&lt;/section&gt;&lt;section&gt;&lt;h3&gt;3. 驱动产品进化的前线传感器&lt;a href=&quot;#3-驱动产品进化的前线传感器&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;优秀 FDE 不只是“交付项目”，还会把一线洞察反哺给产品团队。&lt;/p&gt;&lt;p&gt;他们在解决具体客户问题时，会持续识别哪些需求是个案，哪些需求可能代表一个更大的市场机会。Nominal 强调前线洞察会回流进长期产品路线图；OpenAI 则把 FDE 作为进入企业市场的“矛尖”，一边推动可复制产品的诞生，一边逼近模型能力的边界。&lt;/p&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&gt;核心判断&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;p&gt;FDE 已经超越传统软件交付，变成了工程架构师、行业专家和产品战略触角的综合体。谁能把 AI 能力送入传统行业的腹地，谁就更容易建立真正的护城河。&lt;/p&gt;&lt;/div&gt;&lt;/div&gt;&lt;hr /&gt;&lt;/section&gt;&lt;/section&gt;
+&lt;section&gt;&lt;h2&gt;二、模型越强，FDE 越重要&lt;a href=&quot;#二模型越强fde-越重要&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;FDE 岗位相较去年增长了 10 倍。模型能力的跃迁并没有取代 FDE，反而让它变得更重要。&lt;/p&gt;&lt;p&gt;原因很简单：模型越强，能解决的问题空间越大；问题空间越大，越需要有人理解真实业务，把模型能力对准高价值场景。&lt;/p&gt;&lt;section&gt;&lt;h3&gt;1. 业务视角拓宽：从标准化软件到异质性劳动&lt;a href=&quot;#1-业务视角拓宽从标准化软件到异质性劳动&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;随着 AI 崛起，B2B 领域中“可被软件解决”的问题被扩大了不止一个量级。&lt;/p&gt;&lt;p&gt;传统 SaaS 平台擅长处理标准工作流，但现实企业里，大量成本都花在高度异质的劳动上：不同岗位、不同任务、不同流程、不同系统之间互相缠绕。要真正进入能源、制造、医疗等深水区，FDE 往往需要在某种程度上“会做那份工作本身”。&lt;/p&gt;&lt;p&gt;这也是为什么模型越强，真正的破局点越不只是模型本身，而是 FDE 对复杂场景的理解与拆解。&lt;/p&gt;&lt;/section&gt;&lt;section&gt;&lt;h3&gt;2. 工程重心上移：摆脱基建泥潭，聚焦高价值难题&lt;a href=&quot;#2-工程重心上移摆脱基建泥潭聚焦高价值难题&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;更强大的模型，尤其是长程任务模型和 Coding Agent，正在大幅减少搭管道、补基础设施、写评估框架的时间。&lt;/p&gt;&lt;p&gt;过去，FDE 很多精力都被消耗在“让系统先跑起来”的基础工程里；现在，底层任务逐渐被 AI 接管，FDE 能把更多时间投入到顶层设计和业务价值判断中。&lt;/p&gt;&lt;p&gt;例如，他们可以不再只停留在代码调试和系统集成，而是进一步参与芯片物理设计、硬件测试流程、复杂供应链优化等更深的行业核心问题。&lt;/p&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&gt;结论&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;p&gt;更强的模型承担了越来越多标准化的“脏活累活”，FDE 则转向连接顶尖 AI 能力与复杂现实业务。决定 AI 落地天花板的，不只是模型参数，而是对真实场景的理解与转化能力。&lt;/p&gt;&lt;/div&gt;&lt;/div&gt;&lt;hr /&gt;&lt;/section&gt;&lt;/section&gt;
+&lt;section&gt;&lt;h2&gt;三、FDE 不是 Bug，而是巨大的 Feature&lt;a href=&quot;#三fde-不是-bug而是巨大的-feature&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;传统软件行业最理想的状态，通常是“一套标准代码卖给所有客户”。任何针对单个客户的定制化开发，都容易被视为维护成本、交付负担和产品路线图风险。&lt;/p&gt;&lt;p&gt;但在 AI 时代，FDE 这种看似“重人力、高定制”的模式，正在被重新定义。它不再是无奈妥协，而是一种能创造商业价值、构筑核心护城河的战略能力。&lt;/p&gt;&lt;section&gt;&lt;h3&gt;1. 拒绝传话游戏：从需求搬运工到前线破局者&lt;a href=&quot;#1-拒绝传话游戏从需求搬运工到前线破局者&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;很多 SaaS 公司起初依靠 PLG（产品驱动增长）起量，但在追逐大企业市场时，容易陷入“路线图被带偏”的陷阱。&lt;/p&gt;&lt;p&gt;传统模式下，客户需求要经过销售、产品经理，再传到研发团队。链条越长，信息损耗越大，最后产品线可能堆出大量只对单一客户有用的功能。&lt;/p&gt;&lt;p&gt;FDE 的出现打破了这个僵局。以 Ramp 为例，他们的 FDE 直接面对财务团队，甚至为了贴合客户习惯专门开发 Excel Agent。让最懂代码的人直接理解业务，用一个信息完整、判断力强的大脑替代长链条传话，不仅能高效赢下企业订单，也能保护核心产品团队，避免主线产品被拉偏。&lt;/p&gt;&lt;/section&gt;&lt;section&gt;&lt;h3&gt;2. 跨越咨询陷阱：将定制需求沉淀为通用平台&lt;a href=&quot;#2-跨越咨询陷阱将定制需求沉淀为通用平台&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;FDE 与咨询公司或服务外包往往只有一线之隔。优秀 FDE 团队必须具备极强的抽象能力，能判断哪些工作只是一次性交付，哪些工作正在变成真正的产品能力。&lt;/p&gt;&lt;p&gt;Nominal 早期签下大客户时，曾遇到一个问题：数据预处理脚本只能在客户个人电脑上运行。他们的 FDE 没有选择简单的定制外包，而是构建了一个可上传数据转换逻辑容器的通用架构。&lt;/p&gt;&lt;p&gt;这个最初服务于大客户的定制方案，最后演变成卖给更多客户的核心能力。也就是说，FDE 的价值不只是“做定制”，而是通过“先验证、再沉淀”，把个案需求变成平台能力。&lt;/p&gt;&lt;/section&gt;&lt;section&gt;&lt;h3&gt;3. 重塑软件经济学：用学习飞轮构建持续价值&lt;a href=&quot;#3-重塑软件经济学用学习飞轮构建持续价值&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;随着 Codex 等 AI 工具大幅降低软件开发成本，FDE 对“什么应该产品化”的判断也在变化。&lt;/p&gt;&lt;p&gt;如今，OpenAI 的 FDE 在接到新需求时，会先问一个问题：&lt;/p&gt;&lt;blockquote&gt;&lt;p&gt;这能否被现有平台吸收？&lt;/p&gt;&lt;/blockquote&gt;&lt;p&gt;如果答案是否定的，才会考虑单独立项。&lt;/p&gt;&lt;p&gt;从创业公司的视角看，FDE 模式本质上是一个经济学问题：交付出去的东西，是否能在固定成本投入之后产生持续价值。只要一个 Agent 能在客户那里承接高频、规模化的工作流，它就会持续产生很高的收益。&lt;/p&gt;&lt;p&gt;通过深入每一个真实场景，FDE 正在形成一种学习飞轮：越贴近现场，越理解复杂业务；越理解复杂业务，下一次交付的前置成本就越低。&lt;/p&gt;&lt;hr /&gt;&lt;/section&gt;&lt;/section&gt;
+&lt;section&gt;&lt;h2&gt;四、什么样的人能成为优秀的 FDE？&lt;a href=&quot;#四什么样的人能成为优秀的-fde&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;FDE 之所以成为当下科技圈最炙手可热、也最难寻觅的岗位，是因为它要求一种非常罕见的复合型能力。&lt;/p&gt;&lt;p&gt;顶尖科技公司在招募这类人时，往往不看单一标签，而是关注下面四个维度。&lt;/p&gt;&lt;section&gt;&lt;h3&gt;1. 跨越边界的全栈能力链&lt;a href=&quot;#1-跨越边界的全栈能力链&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;优秀 FDE 首先必须是技术上的硬手：懂传统软件工程，能处理复杂企业系统集成，也能应对大模型行为的不确定性。&lt;/p&gt;&lt;p&gt;但技术还不够。他们天然还要兼具客户成功和业务拓展属性：能从 0 到 1 构建产品，建立客户信任，穿越复杂组织结构，最终对交付结果负责。&lt;/p&gt;&lt;p&gt;这种横跨技术与商业整条链路的人才，是真正的稀缺资源。&lt;/p&gt;&lt;/section&gt;&lt;section&gt;&lt;h3&gt;2. 极度务实的 Outcome-Focused 思维&lt;a href=&quot;#2-极度务实的-outcome-focused-思维&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;OpenAI 等公司寻找 FDE 时，最看重的共同点是：&lt;strong&gt;对价值的执着追求&lt;/strong&gt;。&lt;/p&gt;&lt;p&gt;普通工程师可能会爱上自己造出来的形式，坚信“只要东西做好了，用户自然会喜欢”。但真正优秀的 FDE 完全以结果为导向。如果客户不用，或者用完没有实际收益，他们会毫不犹豫地推翻重来。&lt;/p&gt;&lt;p&gt;他们不迷恋答案长什么样，只在乎问题是否被真正解决。&lt;/p&gt;&lt;/section&gt;&lt;section&gt;&lt;h3&gt;3. 愿意说“Yes”的商业破局者&lt;a href=&quot;#3-愿意说yes的商业破局者&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;传统工程师面对需求时，常常更倾向于继续打磨手头优雅的技术代码，因此本能地想说“No”。&lt;/p&gt;&lt;p&gt;但 FDE 必须是那群时刻关心收入、关心公司能否赢下市场的人。面对客户痛点，他们愿意主动拥抱挑战，说出“Yes”，并为最终交付和落地承担责任。&lt;/p&gt;&lt;p&gt;这也是为什么直接面向客户沟通的能力是一道硬门槛：FDE 需要极强的同理心、现场判断力和应变能力。&lt;/p&gt;&lt;/section&gt;&lt;section&gt;&lt;h3&gt;4. 保持好奇与流动的成长型心态&lt;a href=&quot;#4-保持好奇与流动的成长型心态&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Scrappy（拼劲十足）、Generalist（通才）以及对万事万物的好奇心，是 FDE 非常重要的底色。&lt;/p&gt;&lt;p&gt;同时，优秀 FDE 必须足够谦逊，愿意跟随公司发展阶段调整自己的角色。更重要的是，FDE 与核心产品工程之间的轮转机制，往往是他们持续进化的源泉：&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;前线人员带着现场问题回到总部，补齐产品路线图。&lt;/li&gt;
+&lt;li&gt;后方研发飞到一线体验真实场景，再反过来优化产品。&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;只有在这种双向流动中，才有可能培养出既懂代码、又懂业务、还懂人的顶级 AI 架构师。&lt;/p&gt;&lt;hr /&gt;&lt;/section&gt;&lt;/section&gt;
+&lt;section&gt;&lt;h2&gt;结语&lt;a href=&quot;#结语&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;在复杂的现实世界里，AI 落地从来不是“模型足够强就自然发生”的事情。&lt;/p&gt;&lt;p&gt;真正困难的部分，是理解现场、穿透流程、连接系统、重构工作流，并让技术变成可持续的商业价值。FDE 正是站在这个交界处的人。&lt;/p&gt;&lt;p&gt;他们不是 AI 商业化里的临时补丁，而是把前沿技术带入真实产业的关键接口。&lt;/p&gt;&lt;/section&gt;</content:encoded></item><item><title>OpenClaw vs Hermes</title><link>https://l-lty.github.io/Leoblog/posts/openclawhermes/</link><guid isPermaLink="true">https://l-lty.github.io/Leoblog/posts/openclawhermes/</guid><description>OpenClaw 和 Hermes 是两个非常有代表性的项目。它们代表了 AI Agent 的两条不同进化路径。</description><pubDate>Mon, 20 Apr 2026 00:00:00 GMT</pubDate><content:encoded>&lt;section&gt;&lt;h2&gt;OpenClaw 与 Hermes 的共同点&lt;a href=&quot;#openclaw-与-hermes-的共同点&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;OpenClaw&lt;/strong&gt; 和 &lt;strong&gt;Hermes&lt;/strong&gt; 都属于通用 Agent 系统。它们都不是单点脚本，也不是某个聊天渠道里的bot。核心结构都是一样的：&lt;/p&gt;&lt;div&gt;&lt;figure&gt;&lt;figcaption&gt;&lt;/figcaption&gt;&lt;pre&gt;&lt;code&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;1&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;LLM（大脑） + Tools（手） + Memory（记忆） + Planner（决策）&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/code&gt;&lt;/pre&gt;&lt;div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/figure&gt;&lt;/div&gt;&lt;p&gt;它们都在尝试把模型、工具、会话、记忆、Skills、消息入口和本地运行环境接成一套可以长期使用的系统。&lt;/p&gt;&lt;/section&gt;
+&lt;section&gt;&lt;h2&gt;OpenClaw 与 Hermes 区别&lt;a href=&quot;#openclaw-与-hermes-区别&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;工程重心不同，&lt;strong&gt;OpenClaw&lt;/strong&gt; 更像一个本地优先的 &lt;strong&gt;Agent Gateway&lt;/strong&gt;,重点是把真实世界的入口、会话、设备和权限接起来。 &lt;strong&gt;Hermes&lt;/strong&gt; 更像一个学习型 &lt;strong&gt;Agent Runtime&lt;/strong&gt;,重点是让 Agent 在执行过程中沉淀经典，下次少走弯路。&lt;/p&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;flowchart TD
+    %% 标题使用纯文本换行，避免 HTML 导致的边框高度计算错误
+    Title[&quot;`**OpenClaw vs Hermes**
+    同属通用 Agent，但系统厚度长在不同位置`&quot;]
+    style Title fill:none,stroke:none,font-size:18px
+
+    %% 核心节点
+    A[&quot;`**通用 Agent 系统**
+    模型、工具、会话、记忆、Skills、入口、执行环境`&quot;]
+    
+    B[&quot;`**为什么容易混淆？**
+    关键词高度重叠：
+    Gateway / Skills / Memory / Messaging / Local-first
+    看功能列表很像，但架构重心并不一样`&quot;]
+    
+    %% 左右对比分支
+    C[&quot;`**OpenClaw 更厚**
+    
+    **Gateway 控制面**
+    多渠道入口
+    会话与路由
+    设备节点与权限治理`&quot;]
+    
+    D[&quot;`**Hermes 更厚**
+    
+    **学习型 Runtime**
+    Agent Loop
+    会话检索
+    Skill 沉淀与用户建模`&quot;]
+    
+    %% 底部阅读提示
+    Footer[&quot;`读法：先看系统重心，再看功能清单`&quot;]
+
+    %% 连线与不可见占位符 (~~~) 保证布局从上到下排列
+    Title ~~~ A
+    A --&amp;gt; B
+    B --&amp;gt; C
+    B --&amp;gt; D
+    C ~~~ Footer
+    D ~~~ Footer
+
+    %% 定义清爽的配色方案，增加 stroke-width 使边框更清晰
+    classDef topBox fill:#f0fbff,stroke:#2596be,stroke-width:2px,color:#2c3e50
+    classDef midBox fill:#fff9e6,stroke:#d99a29,stroke-width:2px,color:#2c3e50
+    classDef leftBox fill:#e8f0fe,stroke:#689df6,stroke-width:2px,color:#1a1a1a
+    classDef rightBox fill:#e6f4ea,stroke:#5bb974,stroke-width:2px,color:#1a1a1a
+    classDef footerBox fill:#f8f9fa,stroke:#b0b3b8,stroke-width:1.5px,color:#4b5055
+
+    %% 绑定样式
+    class A topBox
+    class B midBox
+    class C leftBox
+    class D rightBox
+    class Footer footerBox&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;p&gt;OpenClaw 和 Hermes 之所以会被放在一起比较，不是误会。它们确实有相似的系统边界。一个通用 Agent 系统，通常不只是“模型加提示词”。 把 Harness拆一下，会有以下几层：&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;LLM 更像引擎/大脑&lt;/li&gt;
+&lt;li&gt;Agent Loop 更像工作节奏&lt;/li&gt;
+&lt;li&gt;Harness 更像给 Agent 配好的工位、规范、工具链、权限和验收机制。&lt;/li&gt;
+&lt;li&gt;Memory、Skills、Context、工具调用、执行环境，都会影响最后的可用性。&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;从这个角度来看，OpenClaw 和 Hermes 都已经越过了&lt;strong&gt;模型包装器&lt;/strong&gt;的阶段。它们都在做一件更接近真实使用的事：把 Agent 放进一个长期运行的工程环境里。
+这也是容易混淆的根源。他们都是 Agent,但是关键点在不同位置。&lt;/p&gt;&lt;p&gt;OpenClaw 主要在于入口、控制面和多设备协同上。&lt;/p&gt;&lt;p&gt;Hermes 主要在执行循环、技能沉淀和跨会话经验复用上。这一点看清楚，后面的架构、安全、迁移和选型都会更容易理解。&lt;/p&gt;&lt;/section&gt;
+&lt;section&gt;&lt;h2&gt;系统的不同重心&lt;a href=&quot;#系统的不同重心&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;很多对比容易卡住，是因为一上来就列功能表，功能表有用，但容易把人带偏。两个系统都支持聊天入口、工具调用、skills、memory、模型切换，于是看起来像同类。&lt;/p&gt;&lt;p&gt;跟那个有用的拆法是把 Agent 系统分为几层：入口、控制面、执行循环、经验曾。&lt;/p&gt;&lt;p&gt;OpenClaw 的 README 里有一句话：“The Gateway is just the control plane - the product is the assistant.” 它不只是在做一个聊天机器人，更像一个本地优先，可接多入口、可接设备节点、可接设备节点、可接 WebChat 和 Dashboard 的控制面。&lt;/p&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;flowchart TD
+    %% 标题使用纯文本换行，避免 HTML 导致的计算错误
+    Title[&quot;`**OpenClaw 的重心**
+    先把入口和控制面做厚，再让 Agent 在秩序里工作`&quot;]
+    style Title fill:none,stroke:none,font-size:20px
+
+    %% 顶部输入渠道层
+    T1[&quot;Telegram&quot;]
+    T2[&quot;Discord&quot;]
+    T3[&quot;WeChat&quot;]
+    T4[&quot;WebChat&quot;]
+
+    %% 核心网关层
+    GW[&quot;`**OpenClaw Gateway**
+    会话、路由、渠道连接、控制面`&quot;]
+
+    %% 核心控制与逻辑层
+    S[&quot;`**Session**
+    会话 / 路由`&quot;]
+    P[&quot;`**Policy**
+    配对 / 白名单 / 沙箱`&quot;]
+    R[&quot;`**Runtime**
+    模型 + 工具`&quot;]
+
+    %% 底部执行与数据节点层
+    DN[&quot;`**Device Nodes**
+    macOS / iOS / Android`&quot;]
+    WS[&quot;`**Workspace**
+    AGENTS / SOUL / USER / Skills`&quot;]
+
+    %% 底部说明文本
+    Footer[&quot;`这张图只保留主链路：
+    入口进入 Gateway，再落到会话、策略、运行时和工作区。
+    `&quot;]
+    style Footer fill:none,stroke:none,color:#88929c,font-size:14px
+
+    %% 排版占位，确保 Title 和 Footer 居中且不被连线打乱
+    Title ~~~ T2
+    Title ~~~ T3
+
+    %% 渠道连接到网关
+    T1 --&amp;gt; GW
+    T2 --&amp;gt; GW
+    T3 --&amp;gt; GW
+    T4 --&amp;gt; GW
+    
+    %% 网关向下分发
+    GW --&amp;gt; S
+    GW --&amp;gt; P
+    GW --&amp;gt; R
+    
+    %% 逻辑层连接到执行节点与工作区
+    S --&amp;gt; DN
+    P --&amp;gt; DN
+    P --&amp;gt; WS
+    R --&amp;gt; WS
+    
+    DN ~~~ Footer
+    WS ~~~ Footer
+
+    %% 定义与原图 1:1 匹配的节点颜色样式
+    classDef inputBox fill:#e8f0fe,stroke:#689df6,stroke-width:2px,color:#3c4043
+    classDef gwBox fill:#f0fbff,stroke:#2596be,stroke-width:2px,color:#2c3e50
+    classDef policyBox fill:#fff9e6,stroke:#d99a29,stroke-width:2px,color:#2c3e50
+    classDef runtimeBox fill:#e6f4ea,stroke:#5bb974,stroke-width:2px,color:#1a1a1a
+    classDef wsBox fill:#f8f9fa,stroke:#b0b3b8,stroke-width:2px,color:#4b5055
+
+    %% 绑定样式到具体节点
+    class T1,T2,T3,T4 inputBox
+    class GW gwBox
+    class S,P policyBox
+    class R,DN runtimeBox
+    class WS wsBox&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;p&gt;Hermes 的 README 则把自己定义成 &lt;strong&gt;“The self-improving AI agent”&lt;/strong&gt; 。值得看的地方是 build-in learning loop:从经验中创建skill,在使用中改进skills，搜索过去的会话，并逐步构建用户模型。&lt;/p&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;flowchart TD
+    %% 标题使用纯文本原生换行，防止解析器崩溃
+    Title[&quot;`**Hermes 的重心**
+    把执行过程变成可检索、可复用的经验资产`&quot;]
+    style Title fill:none,stroke:none,font-size:20px
+
+    %% 定义所有节点
+    H1[&quot;用户任务&quot;]
+    H2[&quot;`**Hermes Agent Loop**
+    模型调用 + 工具调用 + 任务迭代`&quot;]
+    
+    H3[&quot;`**Session Store**
+    SQLite + FTS5`&quot;]
+    H4[&quot;`**Memory Provider**
+    偏好 / 事实`&quot;]
+    
+    H5[&quot;任务输出&quot;]
+    H6[&quot;工具结果回流&quot;]
+    
+    H7[&quot;`**Skill Manager**
+    创建 / 修补`&quot;]
+    H8[&quot;`**~/.hermes/skills**
+    过程记忆，下次任务可复用`&quot;]
+
+    %% 占位符确保标题在最上方
+    Title ~~~ H1
+    
+    %% 主干流程
+    H1 --&amp;gt; H2
+    H2 --&amp;gt; H5
+    
+    %% 左侧记忆与状态循环
+    H2 --&amp;gt; H3
+    H3 --&amp;gt; H4
+    H4 --&amp;gt; H2
+    
+    %% 右侧工具循环
+    H2 --&amp;gt; H6
+    H6 --&amp;gt; H2
+    
+    %% 右下方 Skill 沉淀
+    H5 --&amp;gt; H7
+    H7 --&amp;gt; H8
+
+    %% 定义清晰的 CSS 样式类
+    classDef cyanBox fill:#e8f4fd,stroke:#2c9ed2,stroke-width:2px,color:#2c3e50
+    classDef greenBox fill:#e1f9e8,stroke:#34a853,stroke-width:2px,color:#2c3e50
+    classDef greyBox fill:#f4f5f6,stroke:#8a8d90,stroke-width:2px,color:#2c3e50
+    classDef orangeBox fill:#fff2e1,stroke:#f7ac4c,stroke-width:2px,color:#2c3e50
+
+    %% 绑定样式
+    class H1,H5,H6 cyanBox
+    class H2 greenBox
+    class H3,H4 greyBox
+    class H7,H8 orangeBox&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;p&gt;背后的团队也不同。OpenClaw 由独立开发者 Peter Steinberger 创建，凭借极简安装和多渠道接入快速积累了大量 GitHub Star。不过 Steinberger 今年 2 月加入 OpenAI，项目已交给社区基金会维护，后续的发展节奏还在观察。Hermes 背后是 Nous Research，Hermes 系列模型（Hermes 3、Hermes 4）的缔造者，对模型训练和推理优化有第一手积累，上线不到两个月社区增长很快。&lt;/p&gt;&lt;p&gt;用一句话概括：&lt;/p&gt;&lt;p&gt;&lt;strong&gt;OpenClaw 管入口和秩序，Hermes 管执行和经验。&lt;/strong&gt;&lt;/p&gt;&lt;/section&gt;
+&lt;section&gt;&lt;h2&gt;OpenClaw：把真实世界接进来&lt;a href=&quot;#openclaw把真实世界接进来&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;OpenClaw 不只是聊天窗口，它更像一个按会话串行执行的作业系统。我们看到的是聊天入口，系统内部跑的是一套消息接入、路由、会话和记忆加载机制。&lt;/p&gt;&lt;p&gt;OpenClaw 的定位是 personal AI assistant。你把它跑在自己的设备或服务器上，然后通过熟悉的聊天入口和它交互。它的渠道列表很长：WhatsApp、Telegram、Slack、Discord、Google Chat、Signal、iMessage、BlueBubbles、IRC、Microsoft Teams、Matrix、Feishu、LINE、Mattermost、Nextcloud Talk、Nostr、Synology Chat、Tlon、Twitch、Zalo、WeChat、WebChat。代码仓库里还有专门的 macOS menu bar app、iOS/Android node、Voice Wake、Talk Mode、Live Canvas（A2UI）。&lt;/p&gt;&lt;p&gt;这个细节有分量。对很多真实用户来说，Agent 的第一道门槛经常还没到 ReAct，而是这些更朴素的问题：&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;我能不能从 Telegram 发它？&lt;/li&gt;
+&lt;li&gt;我能不能从 Discord 群里唤起它？&lt;/li&gt;
+&lt;li&gt;我能不能让它跑在家里的小机器上？&lt;/li&gt;
+&lt;li&gt;我能不能让家人、同事、设备节点以不同权限接入？&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;OpenClaw 的 Gateway 正是在处理这些问题。&lt;/p&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;flowchart TD
+    %% 顶部用户与入口层
+    U[&quot;`用户 / 群聊`&quot;]
+    E[&quot;`聊天入口
+    Telegram / Discord
+    WeChat / WebChat`&quot;]
+    
+    %% 核心网关层
+    GW[&quot;`OpenClaw Gateway
+    控制面
+    会话、路由、渠道连接`&quot;]
+
+    %% 中间路由与策略层
+    S[&quot;`Session
+    会话 / 路由`&quot;]
+    P[&quot;`Policy
+    配对 / 白名单 / 沙箱`&quot;]
+    D[&quot;`Device Nodes
+    macOS / iOS / Android`&quot;]
+    W[&quot;`Workspace
+    AGENTS / SOUL / USER
+    / Skills`&quot;]
+
+    %% 底部运行时层
+    AR[&quot;`Agent Runtime
+    模型 + 工具`&quot;]
+
+    %% 定义主链路走向
+    U --&amp;gt; E
+    E --&amp;gt; GW
+
+    %% 网关向下分发
+    GW --&amp;gt; S
+    GW --&amp;gt; P
+    GW --&amp;gt; D
+    GW --&amp;gt; W
+
+    %% 汇总到 Agent 运行时
+    S --&amp;gt; AR
+    P --&amp;gt; AR
+    W --&amp;gt; AR
+
+    %% 定义与原图匹配的 CSS 颜色和边框样式
+    classDef blueBox fill:#eaf4fc,stroke:#5b9bd5,stroke-width:2px,color:#2c3e50
+    classDef cyanBox fill:#eaf6f6,stroke:#45a7a7,stroke-width:2px,color:#2c3e50
+    classDef orangeBox fill:#fef6e9,stroke:#eda34a,stroke-width:2px,color:#2c3e50
+    classDef greenBox fill:#eefaf0,stroke:#64c375,stroke-width:2px,color:#2c3e50
+    classDef greyBox fill:#f8f9fc,stroke:#a6b0c3,stroke-width:2px,color:#2c3e50
+
+    %% 绑定样式
+    class U,E blueBox
+    class GW cyanBox
+    class S,P orangeBox
+    class D,AR greenBox
+    class W greyBox&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;p&gt;它先把入口和控制面做厚，再让 Agent 在这个秩序里工作。&lt;/p&gt;&lt;p&gt;这类题系统的难点，不只是发起一次模型调用。更麻烦的是多渠道状态、会话隔离、群聊激活规则、消息分片、凭据存放、配对策略、设备节点权限、WebSocket 控制面、Dashboard，以及一堆看起来不起眼但上线后每天都会碰到的边界条件。所以把 OpenClaw 简化成”一个工具箱”，多少有些低估它了。它更像一个 Agent 版的个人通信与设备控制平面。&lt;/p&gt;&lt;/section&gt;
+&lt;section&gt;&lt;h2&gt;Hermes：让 Agent 把经验写下来&lt;a href=&quot;#hermes让-agent-把经验写下来&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Hermes 的重心不一样。它当然也有 CLI 和 Messaging Gateway，也能接 Telegram、Discord、Slack、WhatsApp、Signal 等入口。但如果只从”能接哪些平台”看 Hermes，就会错过它最有意思的地方。&lt;/p&gt;&lt;p&gt;只抓和 OpenClaw 对比最相关的一点：&lt;strong&gt;Hermes 把 Agent 的执行过程当成长期资产&lt;/strong&gt;。它的 README 里，closed learning loop 被放在非常靠前的位置：Agent-curated memory、autonomous skill creation、skills self-improve、FTS5 session search、Honcho user modeling。&lt;/p&gt;&lt;p&gt;翻成工程语言，大概是四件事：&lt;/p&gt;&lt;ol&gt;
+&lt;li&gt;当前任务怎么跑，靠 Agent loop 和 tool runtime。&lt;/li&gt;
+&lt;li&gt;过去做过什么，靠 session store 和搜索召回。&lt;/li&gt;
+&lt;li&gt;哪些流程值得复用，沉淀成 skill。&lt;/li&gt;
+&lt;li&gt;用户长期偏好和行为模式，交给 memory provider 和 Honcho 用户建模。&lt;/li&gt;
+&lt;/ol&gt;&lt;p&gt;代码里也能看到这条线。&lt;code&gt;run_agent.py&lt;/code&gt; 负责完整的 tool calling conversation loop；&lt;code&gt;model_tools.py&lt;/code&gt; 负责工具发现和分发；&lt;code&gt;skill_manager_tool.py&lt;/code&gt; 开头就写着”Skills are the agent’s procedural memory”，允许 Agent 创建、更新、删除 skills，把成功路径变成 reusable procedural knowledge；&lt;code&gt;hermes_state.py&lt;/code&gt; 用 SQLite + FTS5 存会话和做全文检索，支持 WAL 模式的并发读写和基于 source tag（cli、telegram、discord 等）的过滤。&lt;/p&gt;&lt;p&gt;Hermes更关心的问题是：&lt;br /&gt;
+&lt;strong&gt;当它完成了一个复杂任务以后，这段经验会不会消失？下次做同类任务，它能不能少试错？&lt;/strong&gt;&lt;/p&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;flowchart TD
+    %% 顶部输入层
+    U[&quot;`用户任务`&quot;]
+
+    %% 核心循环层
+    Loop[&quot;`Hermes Agent Loop
+    模型调用 + 工具调用
+    任务迭代`&quot;]
+
+    %% 中间执行与状态层
+    Tool[&quot;`工具结果
+    回流到 Loop`&quot;]
+    
+    Output[&quot;`任务输出`&quot;]
+    
+    Session[&quot;`Session Store
+    SQLite + FTS5
+    会话检索`&quot;]
+    
+    Memory[&quot;`Memory Provider
+    长期偏好 / 事实`&quot;]
+
+    %% 底部 Skill 沉淀层
+    SkillMgr[&quot;`Skill Manager
+    创建 / 修补 Skill`&quot;]
+    
+    Skills[&quot;`~/.hermes/skills
+    过程记忆
+    下次任务复用`&quot;]
+
+    %% ---------------- 排版辅助 ----------------
+    %% 强制让中间层的四个模块在同一水平线上排开
+    Tool ~~~ Output ~~~ Session ~~~ Memory
+
+    %% ---------------- 连线逻辑 ----------------
+    U --&amp;gt; Loop
+
+    %% 工具调用的双向回流
+    Loop --&amp;gt; Tool
+    Tool --&amp;gt; Loop
+
+    %% 记忆与会话的双向读取/写入
+    Loop --&amp;gt; Session
+    Session --&amp;gt; Loop
+    
+    Loop --&amp;gt; Memory
+    Memory --&amp;gt; Loop
+
+    %% 任务输出与 Skill 沉淀链路
+    Loop --&amp;gt; Output
+    Output --&amp;gt; SkillMgr
+    SkillMgr --&amp;gt; Skills
+
+    %% Skill 经验资产在下次任务中复用 (长回流线)
+    Skills --&amp;gt; Loop
+
+    %% ---------------- 颜色与样式定义 ----------------
+    classDef blueBox fill:#eaf4fc,stroke:#5b9bd5,stroke-width:2px,color:#2c3e50
+    classDef greenBox fill:#eefaf0,stroke:#64c375,stroke-width:2px,color:#2c3e50
+    classDef cyanBox fill:#eaf6f6,stroke:#45a7a7,stroke-width:2px,color:#2c3e50
+    classDef greyBox fill:#f8f9fc,stroke:#a6b0c3,stroke-width:2px,color:#2c3e50
+    classDef orangeBox fill:#fef6e9,stroke:#eda34a,stroke-width:2px,color:#2c3e50
+
+    %% ---------------- 绑定样式 ----------------
+    class U blueBox
+    class Loop greenBox
+    class Tool,Output cyanBox
+    class Session,Memory greyBox
+    class SkillMgr,Skills orangeBox&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;p&gt;这套设计想解决的，是一个老问题：&lt;strong&gt;Agent 每次从零开始，成本很高。&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;如果它已经踩过坑、跑通过流程、修过某个复杂错误，就可以把这条路径保存下来。下一次同类任务，不需要重新”聪明”一次，只要复用之前沉淀过的工作方法。有 Reddit 用户反馈，Agent 在两小时内自动生成了三份技能文档后，重复性研究任务的速度提升了约 40%。这类数据还需要更多验证，但方向感是清楚的。&lt;/p&gt;&lt;p&gt;它把很多 Agent 产品挂在嘴边的”长期记忆”，往 procedural memory 的方向又推了一步。&lt;/p&gt;&lt;/section&gt;
+&lt;section&gt;&lt;h2&gt;Skill：同一个词，但又不同&lt;a href=&quot;#skill同一个词但又不同&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;简单来对比，OpenClaw 是人工写的Skill，Hermes 是自动生成 Skill。方向没错，但容易过度简化。SKill 可以从提示词开始，但它更像一个 Agent work unit。它可以是一个目录，里面有&lt;code&gt;SKILL.md&lt;/code&gt;，也可以有参考资料、脚本、模板、资产和踩坑记录。&lt;/p&gt;&lt;p&gt;把这条线放到 OpenClaw 和 Hermes 上，会更容易看懂差异。&lt;/p&gt;&lt;p&gt;OpenClaw 有一套完整的技能体系。代码仓库里已经内置了 50 多个 skill 目录（1password、discord、slack、github、coding-agent、apple-notes、voice-call 等），支持 AgentSkills-compatible skill folders，每个 skill 是一个包含 &lt;code&gt;SKILL.md&lt;/code&gt; 的目录。系统按 bundled skills、managed/local skills、personal agent skills、project agent skills、workspace skills 分层，通过加载优先级和 gating 做治理。&lt;/p&gt;&lt;p&gt;这更像一个工程化技能目录：&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;哪些技能来自系统；&lt;/li&gt;
+&lt;li&gt;哪些来自本地用户；&lt;/li&gt;
+&lt;li&gt;哪些属于某个 workspace；&lt;/li&gt;
+&lt;li&gt;哪些需要特定环境变量、二进制或配置；&lt;/li&gt;
+&lt;li&gt;哪些优先级更高；&lt;/li&gt;
+&lt;li&gt;哪些第三方 skills 要当成外部输入来处理。&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;Hermes 的 skill 侧重点更像”过程记忆”。&lt;/p&gt;&lt;p&gt;它的 &lt;code&gt;skill_manager_tool.py&lt;/code&gt; 开头就写着：Skills are the agent’s procedural memory: they capture how to do a specific kind of task。它们记录的是”怎么做某类具体任务”，不是泛泛的偏好事实。系统提示里也会提醒 Agent：完成复杂任务、修复棘手错误、发现非平凡 workflow 后，可以用 &lt;code&gt;skill_manage&lt;/code&gt; 把方法保存下来；如果发现 skill 过时或错误，就直接 patch。Hermes 的 skills 目录也预置了 26 个类别（research、software-development、data-science、devops、mlops 等），兼容 agentskills.io 开放标准。&lt;/p&gt;&lt;p&gt;&lt;strong&gt;OpenClaw 的 skill 更像团队里的 SOP 库。Hermes 的 skill 更像一个强执行者不断更新的工作笔记。&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;SOP 库的优点是可控、可审计、适合团队治理。工作笔记的优点是贴近真实任务、迭代快、能把个体使用经验滚起来。代价也不同。OpenClaw 的 skill 质量更多取决于人和社区。Hermes 的自动沉淀有想象力，但也需要复看和修剪，否则”经验”也可能变成”惯性错误”。&lt;/p&gt;&lt;/section&gt;
+&lt;section&gt;&lt;h2&gt;Memory&lt;a href=&quot;#memory&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;先对几个基础词进行定义：&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;Context 是这次任务的临时上下文；&lt;/li&gt;
+&lt;li&gt;Knowledge 更偏稳定知识；&lt;/li&gt;
+&lt;li&gt;Memory 会随时间变化，和用户、任务、历史互动相关；&lt;/li&gt;
+&lt;li&gt;Experience 是从原始记录里蒸馏出来的方法和教训。&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;用这组词再看 OpenClaw 和 Hermes，会更清楚。&lt;/p&gt;&lt;p&gt;OpenClaw 的记忆走”文件即记忆”路线。核心文件包括定义 Agent 性格的 &lt;code&gt;SOUL.md&lt;/code&gt;、记录用户偏好的 &lt;code&gt;USER.md&lt;/code&gt;、按日期组织的日常日志 &lt;code&gt;memory/*.md&lt;/code&gt;，以及精选长期记忆的 &lt;code&gt;MEMORY.md&lt;/code&gt;。语义检索工具负责查找，上下文压缩前执行一次静默记忆写入，防止压缩丢信息。更像给 Agent 一个笔记本。&lt;/p&gt;&lt;p&gt;Hermes 的记忆更系统化，分三层。&lt;/p&gt;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;层级&lt;/th&gt;&lt;th&gt;内容&lt;/th&gt;&lt;th&gt;特点&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;会话记忆&lt;/td&gt;&lt;td&gt;当前对话上下文&lt;/td&gt;&lt;td&gt;仅维持于当次会话&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;持久记忆&lt;/td&gt;&lt;td&gt;跨会话的事实和偏好&lt;br /&gt;( &lt;code&gt;MEMORY.md&lt;/code&gt; + &lt;code&gt;USER.md&lt;/code&gt; )&lt;/td&gt;&lt;td&gt;自动累积，每次对话带上关键信息&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;技能记忆&lt;/td&gt;&lt;td&gt;从成功任务中学到的解决方案模式&lt;/td&gt;&lt;td&gt;SQLite + FTS5 全文检索，支持 LLM 摘要召回，可搜索、可复用、自我迭代&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;p&gt;更像给 Agent 装了一个搜索引擎式的大脑。所以它们都讲 Memory，但&lt;strong&gt;侧重点不同&lt;/strong&gt;。OpenClaw 的 Memory 更容易和 &lt;strong&gt;“身份、会话、工作区边界”&lt;/strong&gt; 放在一起看。Hermes 的 Memory 更容易和**执行轨迹、搜索召回、Skill 沉淀、用户建模”**放在一起看。&lt;/p&gt;&lt;/section&gt;
+&lt;section&gt;&lt;h2&gt;安全措施&lt;a href=&quot;#安全措施&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;section&gt;&lt;h3&gt;OpenClaw：信任模型 + 配置审计&lt;a href=&quot;#openclaw信任模型--配置审计&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;OpenClaw 的安全模型是”personal assistant”（one trusted operator），不是多租户共享。SECURITY.md 里写得很清楚：authenticated Gateway callers are treated as trusted operators for that gateway instance。&lt;/p&gt;&lt;p&gt;它提供了 openclaw security audit —deep 命令来扫描网关配置风险，DM pairing、allowlist、sandbox 和 doctor 机制共同构成安全边界。代码仓库里的安全文档非常详细，覆盖了 Workspace Memory Trust Boundary、Plugin Trust Boundary、Temp Folder Boundary、Sub-agent delegation hardening 等多个层面。&lt;/p&gt;&lt;p&gt;不过 OpenClaw 在安全方面的历史不太平静。今年 2 月被曝出 WebSocket Token 泄露漏洞，外部安全团队发现第三方 Skill 存在数据外泄和 Prompt 注入风险，ClawHub 上也发现了一批恶意 Skill。官方的响应和修复速度不慢，但这些事件提醒我们：一个入口足够多、生态足够开放的系统，攻击面也会相应扩大。&lt;/p&gt;&lt;/section&gt;&lt;section&gt;&lt;h3&gt;Hermes：纵深防御 + 容器隔离&lt;a href=&quot;#hermes纵深防御--容器隔离&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Hermes 在部署层面更强调逐层收紧。它支持六种 terminal backend（local、Docker、SSH、Daytona、Singularity、Modal），其中 NixOS 模式提供了 Namespace 隔离（&lt;code&gt;ProtectSystem=strict&lt;/code&gt;）。
+安全策略包括：&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;危险命令审批：终端命令、文件写入等默认需要人工确认，超时未批准自动拒绝&lt;/li&gt;
+&lt;li&gt;容器隔离：可以把 Agent 的执行环境限制在 Docker 或远程后端里&lt;/li&gt;
+&lt;li&gt;凭据过滤：防止敏感信息泄露到上下文&lt;/li&gt;
+&lt;li&gt;上下文注入扫描：检测 Prompt 注入风险&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;截至目前，Hermes 没有被公开披露过重大安全漏洞。当然，这也和它上线时间更短、用户规模更小有关，不能简单等同于”更安全”。&lt;/p&gt;&lt;p&gt;一句话区分：&lt;strong&gt;OpenClaw 更多在”人该怎么管 Agent”这一层做安全，Hermes 更多在”Agent 运行时该怎么被约束”这一层做安全。&lt;/strong&gt;&lt;/p&gt;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;维度&lt;/th&gt;&lt;th&gt;OpenClaw&lt;/th&gt;&lt;th&gt;Hermes Agent&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;&lt;strong&gt;大类&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;通用 Agent 系统&lt;/td&gt;&lt;td&gt;通用 Agent 系统&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;strong&gt;核心定位&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;本地优先个人 AI 助手，重点是 Gateway 控制面&lt;/td&gt;&lt;td&gt;self-improving AI agent，重点是学习型执行循环&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;strong&gt;入口能力&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;很强，覆盖 25+ 聊天渠道、WebChat、macOS/iOS/Android 节点、Live Canvas&lt;/td&gt;&lt;td&gt;支持 CLI 和 Telegram/Discord/Slack/WhatsApp/Signal/Email&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;strong&gt;架构重心&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;Gateway、会话、路由、设备节点、权限、Dashboard&lt;/td&gt;&lt;td&gt;Agent loop、工具分发、skills、memory、session search、执行后端&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;strong&gt;技能体系&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;AgentSkills-compatible，强调加载来源、优先级、gating 和治理；50+ 内置 skill&lt;/td&gt;&lt;td&gt;skills 作为 procedural memory，强调自动创建、修补和复用；26 个类别&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;strong&gt;记忆方向&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;workspace 文件、memory 插件、语义检索与 agent state&lt;/td&gt;&lt;td&gt;SQLite + FTS5 会话搜索、memory provider、Honcho 用户建模&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;strong&gt;安全策略&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;信任模型 + 配置审计 + DM pairing / allowlist / sandbox&lt;/td&gt;&lt;td&gt;纵深防御：审批 + 容器隔离 + 凭据过滤 + 注入扫描&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;strong&gt;技术栈&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;Node.js / TypeScript&lt;/td&gt;&lt;td&gt;Python 3.11&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;strong&gt;安装体验&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;openclaw onboard --install-daemon&lt;/code&gt;，偏 Gateway 和渠道上手&lt;/td&gt;&lt;td&gt;&lt;code&gt;hermes setup&lt;/code&gt;、&lt;code&gt;hermes model&lt;/code&gt;、&lt;code&gt;hermes gateway&lt;/code&gt;，偏 CLI 和模型配置&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;strong&gt;模型支持&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;多 provider，支持 OAuth + API key failover&lt;/td&gt;&lt;td&gt;200+ 模型（OpenRouter、Anthropic、OpenAI、智谱、Kimi、MiniMax 等），一条命令切换&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;strong&gt;迁移支持&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;更偏 OpenClaw&lt;br /&gt;自身跨机器迁移&lt;/td&gt;&lt;td&gt;支持从 OpenClaw 导入 persona、memory、skills、&lt;br /&gt;allowlist、部分 settings 和 secrets&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;strong&gt;更适合&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;多渠道个人助理、&lt;br /&gt;设备联动、团队入口治理&lt;/td&gt;&lt;td&gt;长期重复任务、研究工作流、个人经验沉淀、RL&lt;br /&gt;轨迹数据生成&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;p&gt;这张表核心只有一句：&lt;strong&gt;OpenClaw 的价值在”接入复杂世界”，Hermes 的价值在”沉淀复杂经验”&lt;/strong&gt;。&lt;/p&gt;&lt;/section&gt;&lt;/section&gt;
+&lt;section&gt;&lt;h2&gt;选 OpenClaw，还是 Hermes&lt;a href=&quot;#选-openclaw还是-hermes&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;从三个角度想：&lt;br /&gt;
+第一，你的主要复杂度在哪？
+如果复杂度在入口，比如 Telegram、Discord、Slack、WeChat、WebChat、iOS、Android、macOS 节点、群聊、私聊、配对、远程 Gateway，那 OpenClaw 更自然。如果复杂度在任务本身，比如研究、代码修改、数据分析、日报周报、PR 审查、重复性排障、长链路自动化，那 Hermes 更值得试。&lt;/p&gt;&lt;p&gt;第二，你更担心不可控，还是更担心不成长？&lt;br /&gt;
+如果更担心不可控，可以先看 OpenClaw 的 Gateway、allowlist、pairing、sandbox、doctor、workspace 边界。&lt;br /&gt;
+如果更担心 Agent 每次都从零开始，可以先看 Hermes 的 skills self-improve、FTS5 session search、memory provider、Honcho 用户建模。&lt;/p&gt;&lt;p&gt;第三，你是一个人用，还是要带进团队流程？&lt;br /&gt;
+个人折腾、研究工作流、长任务，Hermes 的成长性更有吸引力。团队协作、多入口接入、设备联动、权限治理，OpenClaw 的控制面价值更高。当然，也可以两者都试。&lt;/p&gt;&lt;p&gt;看 Hermes，就看它的学习循环有没有帮你减少重复劳动。&lt;/p&gt;&lt;p&gt;看 OpenClaw，就看它的 Gateway、渠道、会话和设备治理有没有让你的 Agent 更容易进入日常场景。&lt;/p&gt;&lt;p&gt;更直接一点：&lt;strong&gt;我现在缺的，是入口、秩序，还是经验？&lt;/strong&gt;&lt;/p&gt;&lt;/section&gt;</content:encoded></item><item><title>从Prompt Engineering 到 Harness Engineering</title><link>https://l-lty.github.io/Leoblog/posts/prompt/</link><guid isPermaLink="true">https://l-lty.github.io/Leoblog/posts/prompt/</guid><description>LLM 应用落地的核心范式转变：从经验主义的提示词工程（Prompt Engineering），走向数据驱动的系统化测试与编排框架（Harness）。解析动态上下文组装、模型能力评测基准以及可靠的工具调用工程实践。</description><pubDate>Thu, 02 Apr 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;过去两年AI工程重心已经变换过三次了，一开始是Prompt Engineering，后来Agent火起来后，模型要做的事情越来越复杂，光把话讲清楚根本不够，它还得知道该用什么信息，于是Context Engineering成为主流，当把上下文管得越来越精细之后，还存在一个问题：信息都给对了，但是模型在长链路任务里还是会跑偏。&lt;/p&gt;
+&lt;p&gt;提示词没问题，上下文没问题，但是不稳定，Mitchell Hashimoto一篇博客和OpenAI的百万行代码实验同时出现，Harness Engineering被推了出来。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Prompt Engineering：&lt;/strong&gt; 怎么让模型&lt;strong&gt;听懂&lt;/strong&gt;你想干什么&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Context Engineering：&lt;/strong&gt; 怎么让模型&lt;strong&gt;知道&lt;/strong&gt;该用什么信息&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Harness Engineering：&lt;/strong&gt; 怎么让模型在真实执行里&lt;strong&gt;持续做对&lt;/strong&gt;一连串的事情&lt;/li&gt;
+&lt;/ul&gt;
+&lt;section&gt;&lt;h2&gt;Prompt Engineering&lt;a href=&quot;#prompt-engineering&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;大语言模型交互的起点，在这个阶段，将LLM视为一个高维的函数，而Prompt就是输入参数。&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;核心目标：&lt;/strong&gt; 用自然语言标准定义任务边界、角色、输出格式以及基础的推理逻辑。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;代表性技术：&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Zero-shot / Few-shot Learning:&lt;/strong&gt; 通过提供一到多个示例，规范模型的输出分布。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Chain of Thought（CoT）：&lt;/strong&gt; 强制模型“Think step by step”或使用&lt;code&gt;&amp;lt;think&amp;gt;&lt;/code&gt;标签。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;ReAct范式：&lt;/strong&gt; 要求模型按照“思考 -&amp;gt; 行动 -&amp;gt; 观察”的循环进行输出，为后续的 Agent 打下基础。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;工程局限性：&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;静态与孤立：&lt;/strong&gt; 纯 Prompt 无法动态感知外部世界，模型只能基于预训练的知识回答，极易产生幻觉。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Token 成本危机：&lt;/strong&gt; 当业务复杂度上升，开发者往往试图把几万字的操作手册直接塞进 Prompt，不仅导致 API 成本剧增，还会引发模型的“注意力丢失（Lost in the Middle）”。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;举个例子。你丢一段代码给大模型，说「加个排序」。它会怎么回？大概率是给你回一段排序的代码片段，告诉你「就这么写」。但你拿到这段代码一看，傻眼了：它没说放在哪儿，也没说要不要改其他函数，更没把完整的代码给你。&lt;/p&gt;&lt;p&gt;那如果你换一种说法呢？「这是我的完整代码，请帮我加上对 users 列表按年龄从大到小的排序，注意保留原有的所有逻辑，最后输出完整代码」。这次它给的结果一下就靠谱多了。&lt;/p&gt;&lt;p&gt;为啥？因为大模型本质上是一个对上下文极度敏感的概率生成器。&lt;/p&gt;&lt;p&gt;什么叫敏感？就是你给它什么样的输入，它就会沿着那个方向生成。&lt;/p&gt;&lt;p&gt;你给它一个角色身份，比如「你是一个资深 Java 工程师」，它就会偏向用 Java 工程师的思路回答；你给它几个示例，比如「按照下面这个例子的格式来」，它就会沿着那个范式补全；你强调什么样的约束，比如「不要修改我已有的代码」，它就会把这个约束当成重点。&lt;/p&gt;&lt;p&gt;你会发现，写提示词的本质，根本不是在「命令」模型，而是在塑造它的概率空间。你给它的每一句话，都在悄悄地把它的输出往某个方向推。&lt;/p&gt;&lt;p&gt;正因为这种敏感性，大家慢慢摸索出了一套「提示词配方」。一个稍微正式一点的提示词，一般会包含这么几个部分：&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;角色设定&lt;/li&gt;
+&lt;li&gt;背景信息&lt;/li&gt;
+&lt;li&gt;参考资料&lt;/li&gt;
+&lt;li&gt;明确任务&lt;/li&gt;
+&lt;li&gt;约束条件&lt;/li&gt;
+&lt;li&gt;输出格式&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;把这些东西按一定的结构组装起来，就是一份比较完整的提示词。这种有意识地去设计和调整提示词，让模型稳定输出你想要的内容的技术活，就叫Prompt Engineering。&lt;/p&gt;&lt;p&gt;但是提示词工程只能解决短链路问题，对于复杂事情，提示词工程不能完全支撑起来。比如说让大模型分析一下财报，但是他也没看过财报，分析不了。因此，提示词替代不了&lt;strong&gt;事实&lt;/strong&gt;本身。&lt;/p&gt;&lt;p&gt;提示词擅长的，是把任务表达清楚、把约束讲明白，激发模型已有的能力，但它不擅长凭空补出模型不知道的知识，也不擅长管理一大堆动态变化的信息，更不擅长在长链路任务里维持稳定的状态。&lt;/p&gt;&lt;p&gt;于是&lt;strong&gt;Context Engineering&lt;/strong&gt;来了。&lt;/p&gt;&lt;/section&gt;
+&lt;section&gt;&lt;h2&gt;Context Engineering&lt;a href=&quot;#context-engineering&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Agent火了之后，模型不再只是回答问题，而是要到真实环境里去干活，需要多轮对话，调用工具，写代码，查数据库，在多个步骤之间传递中间结果，还要根据外部反馈不断修正自己的计划。&lt;/p&gt;&lt;p&gt;这个时候问题就完全变了，系统面对的已经不是这一次回答对不对，而是整条链路能不能跑通。&lt;/p&gt;&lt;p&gt;举个例子，如果让大模型做一个更真实的任务，比如说：分析这份需求文档，找出潜在风险，结合我们之前几次评审的意见，给出改进建议，最后生成一份给产品经理的反馈高。&lt;/p&gt;&lt;p&gt;光靠一句提示词，根本完成不了这个任务，模型至少需要拿到：&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;当前的需求文档&lt;/li&gt;
+&lt;li&gt;历史的评审记录&lt;/li&gt;
+&lt;li&gt;公司的相关规范&lt;/li&gt;
+&lt;li&gt;当前任务的具体目标&lt;/li&gt;
+&lt;li&gt;之前已经分析出来的中间结论&lt;/li&gt;
+&lt;li&gt;收件人是谁，希望用什么语气&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;这些任务全部加起来，才叫一个完整的任务环境。正是基于这个观察，才慢慢形成了一个新的概念：Context（上下文：每一个发给大模型的所有信息加在一起，就叫上下文，提示词只是上下文里很小的一部分）。一个完整的上下文还包括：用户输入、历史对话、检索到的资料、工具返回的结果、当前的任务状态、中间产物、系统规则、安全约束等。&lt;/p&gt;&lt;p&gt;总之Context Engineering核心思想就一句话：模型未必知道，所以系统必须在合适的时机，把正确的信息送进去。
+但是所有的相关资料全塞进去不现实，大模型一次处理的上下文是有上限的，这就叫&lt;strong&gt;上下文窗口&lt;/strong&gt;。&lt;/p&gt;&lt;p&gt;可以想象成大模型的短期记忆容量，模型一次性只能记住这么多东西。就算窗口再大，大模型的注意力也不是均匀分布的，研究发现，当上下文塞得太满的时候，模型会出现一种叫做上下文腐化的现象：它开始记不住前面的内容，开始前后矛盾，开始忽略最初定下的规则。&lt;/p&gt;&lt;p&gt;&lt;strong&gt;给大模型太多的东西看，不一定能抓住重点。&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;所以Context Engineering要解决的核心问题就是怎么在上下文窗口有限的前提下，把最相关的信息，以最合理的方式，送给模型。&lt;/p&gt;&lt;p&gt;可以拆成三个步骤：&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;召回：&lt;/strong&gt; 从一大堆资料里找出跟当钱任务最相关的那部分。这里面就涉及到RAG技术。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;压缩：&lt;/strong&gt; 找到的信息可能太多，需要压缩，常见的做法是让模型对每一段做个摘要，然后只把摘要送进最终的上下文，或者，对历史对话，把太老的对话压缩成一句话总结，只保留最近吉伦的原文。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;组装：&lt;/strong&gt; 按照一定的顺序，格式组装起来。&lt;/li&gt;
+&lt;/ul&gt;&lt;/section&gt;
+&lt;section&gt;&lt;h2&gt;Harness Engineering&lt;a href=&quot;#harness-engineering&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;虽然提示词写得很好，上下文管理也很好，模型单步上的表现确实越来越好了。但只要人物的链路一长，模型就还是会出问题：&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;计划做得很好，但执行的时候突然跑偏了&lt;/li&gt;
+&lt;li&gt;调用工具调对了，但理解错了工具返回的结果&lt;/li&gt;
+&lt;li&gt;在一个很长的任务链里，已经悄悄偏离初衷了，但系统完全没察觉。&lt;/li&gt;
+&lt;li&gt;跑着跑着突然忘了自己最初要干啥&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;提示词工程优化的是意&lt;strong&gt;图的表达&lt;/strong&gt;，上下文工程优化的是信息的供给，但这两个都还停留在输入测。当模型真正开始行动的时候，会出现一个全新的问题：谁来监督、约束，谁来在它跑偏的时候把它拉回来？&lt;/p&gt;&lt;p&gt;这都是Harness Engineering要解决的事情。&lt;/p&gt;&lt;p&gt;Harness翻译为马具，缰绳。在AI系统里，这个比喻就比较贴切，当模型从回答问题到执行任务，系统不能只负责喂信息，还要能驾驭整个执行过程。这就是&lt;strong&gt;Harness Engineering&lt;/strong&gt; 的出发点。&lt;/p&gt;&lt;p&gt;如果说前两代工程关注的是怎么让模型更会想，那么Harness关注的就是怎么让模型不跑偏，跑得稳，出了错还能拉回来。比如：&lt;/p&gt;&lt;p&gt;假设你是一个销售经理，要派一个刚入职的新人去做一次很重要的客户拜访。
+你会做哪些事情呢？
+第一件事，把任务讲清楚。你会告诉他：「见到客户先寒暄，然后介绍方案，再问需求，最后确认下一步」。这就是 Prompt Engineering，重点是把话说明白，不让新人懵。
+第二件事，把资料准备齐全。光把流程讲清楚不够，新人还得知道：客户是谁？之前聊过啥？产品报价多少？竞品啥情况？这次会议的目标是啥？这些资料你都得给他。这就是 Context Engineering，重点是把信息供给到位。
+第三件事呢？如果这是一个特别重要的客户，你光把流程讲清楚、资料给齐了，你心里还是不踏实对吧？你还会做更多的事情：&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;让他带一份 checklist 去，每个关键节点都要打勾&lt;/li&gt;
+&lt;li&gt;让他在关键节点实时给你汇报&lt;/li&gt;
+&lt;li&gt;让他录音，回来你要复盘&lt;/li&gt;
+&lt;li&gt;如果发现他拜访过程中跑偏了，马上电话纠正&lt;/li&gt;
+&lt;li&gt;拜访完成后，要按照明确的标准去验收成果&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;这一整套东西，就是 Harness。它的重点已经不是「把话讲清楚」、「把资料给齐」了，而是「有没有一整套机制能持续观测、持续纠正、最终验收」。&lt;/p&gt;&lt;p&gt;关于 Harness 的边界，圈子里流传着一个特别简洁的等式：&lt;/p&gt;&lt;p&gt;Agent=Model+Harness&lt;/p&gt;&lt;p&gt;&lt;strong&gt;人话：&lt;/strong&gt; 在一个AI Agent系统里面，除了模型本身之外，几乎所有决定它能不能稳定交付的东西，都属于Harness。&lt;/p&gt;&lt;p&gt;三个Engineering属于包含关系：&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;Prompt 是对指令的工程化&lt;/li&gt;
+&lt;li&gt;Context 是对输入环境的工程化&lt;/li&gt;
+&lt;li&gt;Harness 是对整个运行系统的工程化&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;它们的边界一层比一层大，Prompt是Context的一部分，Context是Harness的一部分。当你做Harness的时候，里面一定包含Context工程，Context工程又一定包含Prompt工程。&lt;/p&gt;&lt;section&gt;&lt;h3&gt;Harness里面都是什么&lt;a href=&quot;#harness里面都是什么&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h3&gt;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;层&lt;/th&gt;&lt;th&gt;这一层在解决的一句话问题&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;上下文精细化&lt;/td&gt;&lt;td&gt;模型这一轮该看到什么？&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;工具系统&lt;/td&gt;&lt;td&gt;模型用什么动手？&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;执行编排&lt;/td&gt;&lt;td&gt;模型下一步该干啥？&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;记忆与状态&lt;/td&gt;&lt;td&gt;模型跨轮该记住什么？&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;评估与观测&lt;/td&gt;&lt;td&gt;模型做得好不好有没有尺子？&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;约束与恢复&lt;/td&gt;&lt;td&gt;模型出错了能不能爬起来？&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;p&gt;可以分为三组：&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;输入侧（让模型看到正确的东西）：&lt;/strong&gt; 上下文精细化管理 + 记忆与状态管理&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;动作侧（让模型做出正确的事）：&lt;/strong&gt; 工具系统 + 任务执行编排&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;校验侧（让模型知道做没做对）：&lt;/strong&gt; 评估观测 + 约束恢复&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;这三组对应了在真实环境里干活的三个必要条件：看得准 -&amp;gt; 做得对 -&amp;gt; 错了能兜底。任何一个成熟的Harness，都离不开这三组六层。&lt;/p&gt;&lt;p&gt;先举一个例子：假设要做一个 Agent，任务是：每天定时帮你扫一遍 GitHub 上你关注的仓库的新 PR，从里面挑出值得你特别关注的那几个，对每一个生成一段简短的摘要和点评，最后把结果发到你的 Slack。&lt;/p&gt;&lt;section&gt;&lt;h4&gt;第一层，上下文的精细化管理&lt;a href=&quot;#第一层上下文的精细化管理&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h4&gt;&lt;p&gt;输入侧的第一件事：&lt;strong&gt;模型每次被调用的时候，到底该看什么？&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;有一个关键的修饰词：每次被调用的时候，这一层容易和第四层（记忆与状态）搞混，需要做一下简单的区分：&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;第一层（上下文的精细化）管的是空间：&lt;/strong&gt; 这一轮发给模型的那一坨上下文，长啥样、装了些啥、怎么排布&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;第四层（记忆与状态）管的是时间：&lt;/strong&gt; 上一轮发生过的事情，怎么流动到下一轮&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;可以想象成一台相机：第一层是取景框，第四层是胶卷。两件事都很重要，但看的方向完全不同。&lt;/p&gt;&lt;p&gt;回到PR Review Agent。每处理一个PR的时候，到底该看什么？最粗暴的做法是把整个PR的diff全扔给它，这是最容易犯的错。它真正需要的其实是一组&lt;strong&gt;精挑细选的信息：&lt;/strong&gt;&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;PR的标题和描述&lt;/li&gt;
+&lt;li&gt;diff里真正被改动的那几个文件&lt;/li&gt;
+&lt;li&gt;这些文件在仓库里对应的模块说明&lt;/li&gt;
+&lt;li&gt;作者最近几次提交的风格偏好&lt;/li&gt;
+&lt;li&gt;仓库的code review惯例&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;塞给它越多无关信息，它的注意力就越散，这个现象Anthropic称为&lt;strong&gt;context rot(上下文腐化)&lt;/strong&gt;。他们给的解法是just-in-time-retrieval，也就是让Agent边干活边按需抓信息，而不是一上来就把所有可能用到的东西一股脑塞进去。&lt;/p&gt;&lt;p&gt;所以这一层的核心工作可以浓缩成三件事：&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;第一，把角色和目标钉死&lt;/strong&gt;。模型要知道自己是一个PR审查助手，当前任务是挑出值得关注的PR并生成摘要，成功标准是跳出来的真的都是该被关注的，大部分Agent跑偏，根源就是这一步没说清楚。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;第二，动态筛选而不是一次塞满&lt;/strong&gt;。只把当前这个PR相关的那几块信息拉进来，其余的留在文件系统里，等需要了再取。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;第三，结构化组织&lt;/strong&gt;。 固定规则（code review惯例）防一处，动态证据（当前PR的内容）放一处，中间结论（对这个PR的初步打分）放一处，三者要分开，否则模型会自我污染，也就是用前面错的中间结论去影响后面的判断。&lt;/li&gt;
+&lt;/ul&gt;&lt;/section&gt;&lt;section&gt;&lt;h4&gt;第二层，工具系统的可控调用&lt;a href=&quot;#第二层工具系统的可控调用&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h4&gt;&lt;p&gt;先是看到什么，再是能做什么。&lt;/p&gt;&lt;p&gt;没有工具的大模型本质上还是有个文本预测器。它能告诉你一个PR应该怎么审，但它不能真的去github上读PR，它能写出一段Slack消息的文本，但没法真的把这段消息发到你的频道。接上工具后，PR Review Agent才真正活过来。但工具不是接的越多越好。OpenAI在做Codex早期踩过这个坑：他们一开始给Agent接了一堆工具，想着选择多总是好的，结果Agent频繁用错工具、用错时机。后来砍掉一大半，效果反而上去了。&lt;/p&gt;&lt;p&gt;所以这一层要回答三个问题：&lt;/p&gt;&lt;p&gt;**给它哪些工具？**对PR Review Agent来说，至少需要四件：&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;gh&lt;/code&gt;命令行工具: 拉PR列表，看diff&lt;/li&gt;
+&lt;li&gt;读文件工具：看仓库里的相关代码&lt;/li&gt;
+&lt;li&gt;代码搜索工具：查某个函数在哪儿被用到&lt;/li&gt;
+&lt;li&gt;Slack发送工具：把结果发出去&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;别的工具若非必要就先不加。&lt;/p&gt;&lt;p&gt;&lt;strong&gt;什么时候用哪个工具？&lt;/strong&gt; 该查的时候要查，不该查的时候不乱查。比如Agent判断(这个PR改的函数是不是核心逻辑)的时候应该去代码搜索，而不是凭感觉猜。反过来，明明diff已经在上下文里了，再去重新拉一次PR纯属浪费。
+&lt;strong&gt;工具结果怎么喂回模型？&lt;/strong&gt; 这条最容易被忽略。比如Agent调用代码搜索，拿到30条匹配。是不是要把30条原文原样塞回去？不是。要先做一层提炼，比如只留核心模块的那几条，再喂回去。否则这30条原文一进来，上下文又被污染。&lt;/p&gt;&lt;/section&gt;&lt;section&gt;&lt;h4&gt;第三层，任务执行的全局编排&lt;a href=&quot;#第三层任务执行的全局编排&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h4&gt;&lt;p&gt;工具接上后，模型就能动手了，但能动手不等于能做成事。&lt;/p&gt;&lt;p&gt;Agent本质上就是一个for循环，也就是**ReAct（Reasoning Acting）**结构&lt;/p&gt;&lt;p&gt;Agent 经常翻车的场景是：&lt;strong&gt;每一步它都会做，但把所有步骤串起来之后就不会了&lt;/strong&gt;。它会拉PR列表，会读diff，会写摘要，但它不知道应该先拉全列表再逐个分析，还是应该边拉边评，最后交付给你经常就是一堆半成品。&lt;/p&gt;&lt;p&gt;这就是第三层的职责：&lt;strong&gt;给模型一条明确的工作轨道。&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;回到PR Review Agent。它的工作轨道应该是这样：&lt;/p&gt;&lt;div&gt;&lt;figure&gt;&lt;figcaption&gt;&lt;/figcaption&gt;&lt;pre&gt;&lt;code&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;1&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;1.拉取仓库当前所有开放的 PR 列表&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;2&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;2.对每一个 PR:&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;3&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;&lt;span&gt;    &lt;/span&gt;&lt;/span&gt;&lt;span&gt;a. 读 diff 和描述&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;4&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;&lt;span&gt;    &lt;/span&gt;&lt;/span&gt;&lt;span&gt;b. 判断涉及的是核心模块还是边缘模块&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;5&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;&lt;span&gt;    &lt;/span&gt;&lt;/span&gt;&lt;span&gt;c. 核心模块的 PR 做深度分析&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;6&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;&lt;span&gt;    &lt;/span&gt;&lt;/span&gt;&lt;span&gt;d. 给出一个重要性打分 (1-5)&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;7&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;3.按重要性排序, 选前 3 个&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;8&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;4.为每一个生成摘要和点评&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;9&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;5.汇总发到 Slack&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;10&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;6.检查发送是否成功, 失败则重试&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/code&gt;&lt;/pre&gt;&lt;div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/figure&gt;&lt;/div&gt;&lt;p&gt;有了这条轨道，Agent就知道我现在在哪一步，下一步该干啥。它不会再瞎跑。&lt;/p&gt;&lt;p&gt;除了ReAct之外，还有几个业界常见的编排模式：&lt;strong&gt;Plan-and-Execute（先规划完整计划再执行，适合长链路任务）&lt;/strong&gt;、&lt;strong&gt;Reflexion(每次失败都让Agent反思一下再重试)&lt;/strong&gt;、&lt;strong&gt;Tree of Thoughts(同时探索多条思路再选最好的)&lt;/strong&gt;。不同场景用不同的编排策略。&lt;/p&gt;&lt;/section&gt;&lt;section&gt;&lt;h4&gt;第四层，记忆和状态的分层管理&lt;a href=&quot;#第四层记忆和状态的分层管理&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h4&gt;&lt;p&gt;现在是时间侧：Agent怎么在跨轮次之间保持连贯？&lt;/p&gt;&lt;p&gt;没有状态管理的Agent，每一轮调用之间都是失忆的。&lt;/p&gt;&lt;p&gt;你的PR Review Agent今天跑了一遍，明天再跑到时候完全不记得这个PR昨天已经审过了，于是又审一遍再发一次消息，Slack频道很快就会变成重复消息的坟场。&lt;/p&gt;&lt;p&gt;这就是为什么Harness必须管状态。&lt;/p&gt;&lt;p&gt;这里要回扣开头讲的Mitchell Hashimoto和Anthropic的一个核心洞察：&lt;strong&gt;Agent的状态不应该放在上下文窗口里，而应该外化到文件系统。&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;Anthropic在&amp;lt;&amp;lt; Effective harnessfor for long-running agents &amp;gt;&amp;gt;里给出的具体做法是让Agent维护一个&lt;code&gt;claude-progress.txt&lt;/code&gt;日志，一个&lt;code&gt;init.sh&lt;/code&gt;启动脚本、加上完整的git history，作为长期记忆介质。下一轮换一个全新的、干净的上下文窗口接手时，从这些文件里一读，立刻就知道现在到哪一步了。&lt;/p&gt;&lt;p&gt;放到PR Review Agent上，可以做同样的事情，需要管的状态至少有三层，必须分层存：&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;任务状态：&lt;/strong&gt; 今天已经处理到哪个PR了？还剩几个？每个的打分是多少？这类信息写在一个&lt;code&gt;today-progress.json&lt;/code&gt;里，当天任务跑完就归档。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;会话中间结果：&lt;/strong&gt; 当前这一轮里Agent对某个PR做出的初步判断。这类信息随会话结束就可以丢，不需要持久化。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;长期记忆和用户偏好：&lt;/strong&gt; 你喜欢关注什么类型的PR？你特别看重哪些模块？这类信息写在常驻的&lt;code&gt;user_preferences.md&lt;/code&gt;里，每次调用都注入。&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;这三类记忆的生命周期完全不同：任务状态活到任务结束，会话中间结果活到当轮结束，长期记忆跨所有任务存在。混在一起就乱了，分清楚才能用好。Claude Code、Cursor、Trae这些AI IDE里的规则文件，就是长期记忆这一类的典型实现。&lt;/p&gt;&lt;p&gt;每次调用都自动注入，Agent永远记得项目的核心约束。&lt;/p&gt;&lt;/section&gt;&lt;section&gt;&lt;h4&gt;第五层，独立的评估与观测体系&lt;a href=&quot;#第五层独立的评估与观测体系&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h4&gt;&lt;p&gt;这一层是&lt;strong&gt;最容易被跳过，但跳过之后就进退两难&lt;/strong&gt;的一层。&lt;/p&gt;&lt;p&gt;先看一个真实场景，一个Agent上线之后，实际成功率只有50%。不是不出结果，而是每次都出结果，但一半时候是错的，没有机制告诉团队它这次到底做的对不对。&lt;/p&gt;&lt;p&gt;这就是没有第五层的下场。那第五层到底要做什么？把它拆成两件事：一件是有个尺子，另一件是能看到每一次的量。&lt;/p&gt;&lt;p&gt;尺子：Eval 集（这一层真正的核心）&lt;/p&gt;&lt;p&gt;Eval 集（evaluation set）是做 Agent 开发的业界标准做法，也是这一层的灵魂。&lt;/p&gt;&lt;p&gt;简单说就是：你手写一批典型任务，每一个都标注好「正确答案长啥样」，然后每次你对 Harness 做了任何改动（比如改了 CLAUDE.md、加了一个新工具、调整了编排流程），都让 Agent 把这批任务再跑一遍，对比成功率。&lt;/p&gt;&lt;p&gt;对 PR Review Agent 来说，一个最小可用的 Eval 集可能是这样：&lt;/p&gt;&lt;p&gt;从过去三个月挑 20 个真实 PR
+每一个都标注「是不是重要」、「摘要应该怎么写」
+每次改完 Agent 就跑一遍这 20 个，看它挑对了几个、写对了几个&lt;/p&gt;&lt;p&gt;没有这个 Eval 集，你对 Agent 好不好的判断永远停留在「我感觉这次变好了」的玄学阶段。&lt;/p&gt;&lt;p&gt;&lt;strong&gt;LangChain 把他们的 Terminal Bench 成绩从 52.8 推到 66.5 分，直接从榜单 30 开外冲到前 5，靠的就是基于 Eval 集做 trace 回放和迭代。&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;Anthropic 和 OpenAI 内部同样有大量的 Eval 基础设施。这不是锦上添花的可选项，是工程级 Agent 的必需品。&lt;/p&gt;&lt;p&gt;&lt;strong&gt;量：Trace + 日志 + 指标&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;有了尺子还不够，你还得看到 Agent 每一次的真实足迹，也就是它每一步做了什么决策、调了哪个工具、拿到什么返回、花了多少 token。&lt;/p&gt;&lt;p&gt;这就是 LangSmith、Langfuse 这类 trace 系统存在的意义。能看到 trace，你才能定位失败那一步发生了什么，才能往 Harness 里补上对应的修复。&lt;/p&gt;&lt;p&gt;这一层做到位之后，你对 Agent 的调试就从「猜」变成了「看」。&lt;/p&gt;&lt;/section&gt;&lt;section&gt;&lt;h4&gt;第六层，约束校验与失败恢复机制&lt;a href=&quot;#第六层约束校验与失败恢复机制&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h4&gt;&lt;p&gt;最后一层，在真实环境里，失败不是例外，而是常态。&lt;/p&gt;&lt;p&gt;PR Review Agent跑起来之后，一定会遇到各种奇形怪状的失败：Github API限流、某个PR的diff太大把上下文冲爆、Slack webhook、Agent误判了一个无关PR然后疯狂读代码把token耗光一半预算，如果没有恢复机制，每次失败都要到从头再来。&lt;/p&gt;&lt;p&gt;这一层要做三件事：&lt;/p&gt;&lt;p&gt;&lt;strong&gt;约束：定义什么事Agent不能做&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;对 PR Review Agent 来说，约束可以包括：「一次最多分析 20 个 PR」、「不能对已 closed 的 PR 再评论」、「不能直接修改 PR 本身」、「token 用量超过 10 万就立刻停下」。这些约束最好硬编码到代码或 linter 规则里，而不是写在提示词里靠 Agent 自己遵守。OpenAI 在 Codex 项目里把资深工程师的经验固化成他们叫做「Golden Principles」的机制，就是这种思路的极致版。&lt;/p&gt;&lt;p&gt;&lt;strong&gt;校验：在每一步输出前后都做自动检查&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;比如 Agent 给出摘要后先跑一道格式校验（是不是 Markdown？几个段落都在？），发送到 Slack 前先检查频道名是不是在白名单里。&lt;strong&gt;校验不是审美品味，是硬规则。&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;恢复：失败之后有预案&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;GitHub 限流 → 等一段时间后重试；Slack 发送失败 → 先落到本地队列，下次重试；token 快耗光 → 立即停下并保存进度，下一轮继续。&lt;strong&gt;每一种典型失败都应该有一条明确的恢复路径&lt;/strong&gt;，而不是一股脑全挂掉。&lt;/p&gt;&lt;p&gt;这三件事加起来，才能让 Agent 从「能跑」升级到「能在生产环境跑」。&lt;/p&gt;&lt;p&gt;六层就全部展开完了，这一轮你对这六个问题的理解，应该和一开始看的时候完全不一样了，那些问题背后的门道你都见过。开头那一章我们讲过 Mitchell Hashimoto 的「复利效应」，他说 Harness 的核心是「每次 Agent 犯错，都把修复沉到环境里」。那个修复到底沉到哪儿？答案就是这六层的其中某一层：&lt;/p&gt;&lt;ul&gt;
+&lt;li&gt;你发现 Agent 总是漏掉某个上下文信息 → 去改第一层&lt;/li&gt;
+&lt;li&gt;你发现它总是用错工具 → 去改第二层&lt;/li&gt;
+&lt;li&gt;你发现它步骤乱 → 去改第三层&lt;/li&gt;
+&lt;li&gt;你发现它跨天记不住进度 → 去改第四层&lt;/li&gt;
+&lt;li&gt;你发现你没法判断它做得好不好 → 去搭第五层&lt;/li&gt;
+&lt;li&gt;你发现它一失败就崩溃 → 去强化第六层&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;所以这六层不是一张「必须一次搭完」的任务清单。它是一张路标，告诉你下一次 Agent 犯错时，你的修复应该落到哪里。&lt;/p&gt;&lt;p&gt;随着时间推移，这六层的每一层都会被你一点一点填充、加固、打磨，你的 Harness 就是这样一寸一寸长大的。&lt;/p&gt;&lt;/section&gt;&lt;/section&gt;&lt;/section&gt;</content:encoded></item><item><title>Agent 原理、架构与工程实践</title><link>https://l-lty.github.io/Leoblog/posts/agent/agent/</link><guid isPermaLink="true">https://l-lty.github.io/Leoblog/posts/agent/agent/</guid><description>大语言模型（LLM）是一个被关在小黑屋里、只有个聪明大脑的“缸中之脑”；而 Agent，就是给这个大脑装上了记忆、感官和手脚，让它能够主动去现实世界中打工的“数字员工”。</description><pubDate>Fri, 20 Mar 2026 00:00:00 GMT</pubDate><content:encoded>&lt;section&gt;&lt;h2&gt;引言&lt;a href=&quot;#引言&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;这篇文章主要是Agent架构里几块最影响工程效果的内容，包括控制流、上下文工程、工具设计、记忆、多Agent组织、评测、追踪和安全。&lt;/p&gt;&lt;/section&gt;
 &lt;section&gt;&lt;h2&gt;Agent Loop的基本运转方式&lt;a href=&quot;#agent-loop的基本运转方式&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Agent Loop的核心实现逻辑抽象不到20行代码：&lt;/p&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;&lt;figure&gt;&lt;figcaption&gt;&lt;/figcaption&gt;&lt;pre&gt;&lt;code&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;1&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;const&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;messages&lt;/span&gt;&lt;span&gt;:&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;MessageParam&lt;/span&gt;&lt;span&gt;[] &lt;/span&gt;&lt;span&gt;=&lt;/span&gt;&lt;span&gt; [{ &lt;/span&gt;&lt;span&gt;role&lt;/span&gt;&lt;span&gt;:&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;&quot;user&quot;&lt;/span&gt;&lt;span&gt;, &lt;/span&gt;&lt;span&gt;content&lt;/span&gt;&lt;span&gt;:&lt;/span&gt;&lt;span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;userInput&lt;/span&gt;&lt;span&gt; }];&lt;/span&gt;&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;2&lt;/div&gt;&lt;/div&gt;&lt;div&gt;
 &lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;3&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;while&lt;/span&gt;&lt;span&gt; (&lt;/span&gt;&lt;span&gt;true&lt;/span&gt;&lt;span&gt;) {&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;4&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;  &lt;/span&gt;&lt;span&gt;const&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;response&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;=&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;await&lt;/span&gt;&lt;span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;client&lt;/span&gt;&lt;span&gt;.&lt;/span&gt;&lt;/span&gt;&lt;span&gt;messages&lt;/span&gt;&lt;span&gt;.&lt;/span&gt;&lt;span&gt;create&lt;/span&gt;&lt;span&gt;({&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;5&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;    &lt;/span&gt;&lt;span&gt;model&lt;/span&gt;&lt;span&gt;:&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;&quot;claude-opus-4-6&quot;&lt;/span&gt;&lt;span&gt;,&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;6&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;    &lt;/span&gt;&lt;span&gt;max_tokens&lt;/span&gt;&lt;span&gt;:&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;8096&lt;/span&gt;&lt;span&gt;,&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;7&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;    &lt;/span&gt;&lt;span&gt;tools&lt;/span&gt;&lt;span&gt;:&lt;/span&gt;&lt;span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;toolDefinitions&lt;/span&gt;&lt;span&gt;,&lt;/span&gt;&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;8&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;&lt;span&gt;    &lt;/span&gt;&lt;/span&gt;&lt;span&gt;messages&lt;/span&gt;&lt;span&gt;,&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;9&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;&lt;span&gt;  &lt;/span&gt;&lt;/span&gt;&lt;span&gt;});&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;10&lt;/div&gt;&lt;/div&gt;&lt;div&gt;
 &lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;11&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;  &lt;/span&gt;&lt;span&gt;if&lt;/span&gt;&lt;span&gt;&lt;span&gt; (&lt;/span&gt;&lt;span&gt;response&lt;/span&gt;&lt;span&gt;.&lt;/span&gt;&lt;/span&gt;&lt;span&gt;stop_reason&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;===&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;&quot;tool_use&quot;&lt;/span&gt;&lt;span&gt;) {&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;12&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;    &lt;/span&gt;&lt;span&gt;const&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;toolResults&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;=&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;await&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;Promise&lt;/span&gt;&lt;span&gt;.&lt;/span&gt;&lt;span&gt;all&lt;/span&gt;&lt;span&gt;(&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;13&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;&lt;span&gt;      &lt;/span&gt;&lt;/span&gt;&lt;span&gt;response&lt;/span&gt;&lt;span&gt;.&lt;/span&gt;&lt;span&gt;content&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;14&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;&lt;span&gt;        &lt;/span&gt;&lt;/span&gt;&lt;span&gt;.&lt;/span&gt;&lt;span&gt;filter&lt;/span&gt;&lt;span&gt;&lt;span&gt;((&lt;/span&gt;&lt;span&gt;b&lt;/span&gt;&lt;span&gt;) &lt;/span&gt;&lt;/span&gt;&lt;span&gt;=&amp;gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;b&lt;/span&gt;&lt;span&gt;.&lt;/span&gt;&lt;/span&gt;&lt;span&gt;type&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;===&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;&quot;tool_use&quot;&lt;/span&gt;&lt;span&gt;)&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;15&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;&lt;span&gt;        &lt;/span&gt;&lt;/span&gt;&lt;span&gt;.&lt;/span&gt;&lt;span&gt;map&lt;/span&gt;&lt;span&gt;(&lt;/span&gt;&lt;span&gt;async&lt;/span&gt;&lt;span&gt;&lt;span&gt; (&lt;/span&gt;&lt;span&gt;b&lt;/span&gt;&lt;span&gt;) &lt;/span&gt;&lt;/span&gt;&lt;span&gt;=&amp;gt;&lt;/span&gt;&lt;span&gt; ({&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;16&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;          &lt;/span&gt;&lt;span&gt;type&lt;/span&gt;&lt;span&gt;:&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;&quot;tool_result&quot;&lt;/span&gt;&lt;span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;as&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;/span&gt;&lt;span&gt;const&lt;/span&gt;&lt;span&gt;,&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;17&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;          &lt;/span&gt;&lt;span&gt;tool_use_id&lt;/span&gt;&lt;span&gt;:&lt;/span&gt;&lt;span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;b&lt;/span&gt;&lt;span&gt;.&lt;/span&gt;&lt;/span&gt;&lt;span&gt;id&lt;/span&gt;&lt;span&gt;,&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;18&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;          &lt;/span&gt;&lt;span&gt;content&lt;/span&gt;&lt;span&gt;:&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;await&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;executeTool&lt;/span&gt;&lt;span&gt;&lt;span&gt;(&lt;/span&gt;&lt;span&gt;b&lt;/span&gt;&lt;span&gt;.&lt;/span&gt;&lt;/span&gt;&lt;span&gt;name&lt;/span&gt;&lt;span&gt;&lt;span&gt;, &lt;/span&gt;&lt;span&gt;b&lt;/span&gt;&lt;span&gt;.&lt;/span&gt;&lt;/span&gt;&lt;span&gt;input&lt;/span&gt;&lt;span&gt;),&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;19&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;&lt;span&gt;        &lt;/span&gt;&lt;/span&gt;&lt;span&gt;}))&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;20&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;&lt;span&gt;    &lt;/span&gt;&lt;/span&gt;&lt;span&gt;);&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;21&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;&lt;span&gt;    &lt;/span&gt;&lt;/span&gt;&lt;span&gt;messages&lt;/span&gt;&lt;span&gt;.&lt;/span&gt;&lt;span&gt;push&lt;/span&gt;&lt;span&gt;({ &lt;/span&gt;&lt;span&gt;role&lt;/span&gt;&lt;span&gt;:&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;&quot;assistant&quot;&lt;/span&gt;&lt;span&gt;, &lt;/span&gt;&lt;span&gt;content&lt;/span&gt;&lt;span&gt;:&lt;/span&gt;&lt;span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;response&lt;/span&gt;&lt;span&gt;.&lt;/span&gt;&lt;/span&gt;&lt;span&gt;content&lt;/span&gt;&lt;span&gt; });&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;22&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;&lt;span&gt;    &lt;/span&gt;&lt;/span&gt;&lt;span&gt;messages&lt;/span&gt;&lt;span&gt;.&lt;/span&gt;&lt;span&gt;push&lt;/span&gt;&lt;span&gt;({ &lt;/span&gt;&lt;span&gt;role&lt;/span&gt;&lt;span&gt;:&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;&quot;user&quot;&lt;/span&gt;&lt;span&gt;, &lt;/span&gt;&lt;span&gt;content&lt;/span&gt;&lt;span&gt;:&lt;/span&gt;&lt;span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;toolResults&lt;/span&gt;&lt;span&gt; });&lt;/span&gt;&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;23&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;&lt;span&gt;  &lt;/span&gt;&lt;/span&gt;&lt;span&gt;} &lt;/span&gt;&lt;span&gt;else&lt;/span&gt;&lt;span&gt; {&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;24&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;    &lt;/span&gt;&lt;span&gt;return&lt;/span&gt;&lt;span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;response&lt;/span&gt;&lt;span&gt;.&lt;/span&gt;&lt;/span&gt;&lt;span&gt;content&lt;/span&gt;&lt;span&gt;.&lt;/span&gt;&lt;span&gt;find&lt;/span&gt;&lt;span&gt;&lt;span&gt;((&lt;/span&gt;&lt;span&gt;b&lt;/span&gt;&lt;span&gt;) &lt;/span&gt;&lt;/span&gt;&lt;span&gt;=&amp;gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;b&lt;/span&gt;&lt;span&gt;.&lt;/span&gt;&lt;/span&gt;&lt;span&gt;type&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;===&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;&quot;text&quot;&lt;/span&gt;&lt;span&gt;)?.&lt;/span&gt;&lt;span&gt;text&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;??&lt;/span&gt;&lt;span&gt; &lt;/span&gt;&lt;span&gt;&quot;&quot;&lt;/span&gt;&lt;span&gt;;&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;25&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;&lt;span&gt;  &lt;/span&gt;&lt;/span&gt;&lt;span&gt;}&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;26&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;}&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/code&gt;&lt;/pre&gt;&lt;div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/figure&gt;&lt;div&gt;&lt;/div&gt;&lt;/div&gt;&lt;span&gt;显示更多&lt;/span&gt;&lt;span&gt;显示更少&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;p&gt;对应的控制流如下：感知 -&amp;gt; 决策 -&amp;gt; 行动 -&amp;gt; 反馈四个阶段不断循环，直到模型返回纯文本为止。&lt;/p&gt;&lt;p&gt;大多数Agent实现和官方SDK，结构都差不多，循环本身相当稳定，从最小实现一路扩展到支持子Agent,上下文压缩和Skills加载，主循环基本没有变化，新增能力通常都是叠加在循环外部，而不是改动循环内部。&lt;/p&gt;&lt;p&gt;新能力基本只有三种方式：扩展工具集和handler、调整系统提示结构，把状态外化到文件或数据库，不应该让循环体本身变成一个巨大的状态机，模型负责推理，外部系统负责状态和边界，这个分工确定下来后，核心逻辑循环旧很少需要频繁调整。&lt;/p&gt;&lt;section&gt;&lt;h3&gt;Workflow 和 Agent 有什么区别&lt;a href=&quot;#workflow-和-agent-有什么区别&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Anthropic 对这两类系统有一个直接区分：执行路径由代码预先写死的是Workflow，由LLM动态决定下一步的是Agent，核心区别在于控制权在谁手里，现实里很多标着Agent的产品，深入看其实更接近Workflow。&lt;/p&gt;
@@ -1425,14 +2015,7 @@ Tokenizer 不会把它当成一个完整的词，也不会拆成 12 个字母，
 &lt;li&gt;📚 &lt;a href=&quot;https://docs-firefly.cuteleaf.cn/config/siteConfig-usage/&quot; target=&quot;_blank&quot;&gt;站点配置文档&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;🏠 &lt;a href=&quot;https://docs-firefly.cuteleaf.cn/&quot; target=&quot;_blank&quot;&gt;Firefly 官方文档&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;⭐ &lt;a href=&quot;https://github.com/CuteLeaf/Firefly&quot; target=&quot;_blank&quot;&gt;Firefly GitHub&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;&lt;/section&gt;</content:encoded></item><item><title>Firefly 文章加密</title><link>https://l-lty.github.io/Leoblog/posts/encrypted-demo/</link><guid isPermaLink="true">https://l-lty.github.io/Leoblog/posts/encrypted-demo/</guid><description>这是一篇密码保护的示例文章，用于演示文章加密功能。</description><pubDate>Fri, 02 Jan 1970 00:00:00 GMT</pubDate><content:encoded>本文已加密保护，请访问网站查看。</content:encoded></item><item><title>Firefly 一款清新美观的 Astro 博客主题模板</title><link>https://l-lty.github.io/Leoblog/posts/firefly/</link><guid isPermaLink="true">https://l-lty.github.io/Leoblog/posts/firefly/</guid><description>Firefly 是一款基于 Astro 框架和 Fuwari 模板开发的清新美观且现代化个人博客主题模板，专为技术爱好者和内容创作者设计。该主题融合了现代 Web 技术栈，提供了丰富的功能模块和高度可定制的界面，让您能够轻松打造出专业且美观的个人博客网站。</description><pubDate>Fri, 02 Jan 1970 00:00:00 GMT</pubDate><content:encoded>&lt;section&gt;&lt;h2&gt;🌟 项目概述&lt;a href=&quot;#-项目概述&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Firefly&lt;/strong&gt; 是一款基于 Astro 框架和 Fuwari 模板开发的清新美观且现代化个人博客主题模板，专为技术爱好者和内容创作者设计。该主题融合了现代 Web 技术栈，提供了丰富的功能模块和高度可定制的界面，让您能够轻松打造出专业且美观的个人博客网站。&lt;/p&gt;&lt;p&gt;&lt;strong&gt;🖥️在线预览： &lt;a href=&quot;https://firefly.cuteleaf.cn/&quot;&gt;Firefly - Demo site&lt;/a&gt;&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;🏠我的博客： &lt;a href=&quot;https://blog.cuteleaf.cn/&quot; target=&quot;_blank&quot;&gt;https://blog.cuteleaf.cn&lt;/a&gt;&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;📝Firefly使用文档： &lt;a href=&quot;https://docs-firefly.cuteleaf.cn/&quot; target=&quot;_blank&quot;&gt;https://docs-firefly.cuteleaf.cn&lt;/a&gt;&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;⭐Firefly开源地址：&lt;a href=&quot;https://github.com/CuteLeaf/Firefly&quot; target=&quot;_blank&quot;&gt;https://github.com/CuteLeaf/Firefly&lt;/a&gt;&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;⭐Fuwari开源地址：&lt;a href=&quot;https://github.com/saicaca/fuwari&quot; target=&quot;_blank&quot;&gt;https://github.com/saicaca/fuwari&lt;/a&gt;&lt;/strong&gt;&lt;/p&gt;&lt;a href=&quot;https://github.com/CuteLeaf/Firefly&quot; target=&quot;_blank&quot;&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&gt;CuteLeaf&lt;/div&gt;&lt;/div&gt;&lt;div&gt;/&lt;/div&gt;&lt;div&gt;Firefly&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;Waiting for api.github.com...&lt;/div&gt;&lt;div&gt;&lt;div&gt;00K&lt;/div&gt;&lt;div&gt;0K&lt;/div&gt;&lt;div&gt;0K&lt;/div&gt;&lt;span&gt;Waiting...&lt;/span&gt;&lt;/div&gt;&lt;/a&gt;&lt;a href=&quot;https://github.com/saicaca/fuwari&quot; target=&quot;_blank&quot;&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&gt;saicaca&lt;/div&gt;&lt;/div&gt;&lt;div&gt;/&lt;/div&gt;&lt;div&gt;fuwari&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;Waiting for api.github.com...&lt;/div&gt;&lt;div&gt;&lt;div&gt;00K&lt;/div&gt;&lt;div&gt;0K&lt;/div&gt;&lt;div&gt;0K&lt;/div&gt;&lt;span&gt;Waiting...&lt;/span&gt;&lt;/div&gt;&lt;/a&gt;&lt;p&gt;&lt;/p&gt;&lt;figure&gt;&lt;img alt=&quot;Firefly&quot; loading=&quot;lazy&quot; width=&quot;2201&quot; height=&quot;1238&quot; src=&quot;/Leoblog/_astro/1.DzpFX8mf_BOiKh.webp&quot; /&gt;&lt;figcaption&gt;Firefly&lt;/figcaption&gt;&lt;/figure&gt;&lt;p&gt;&lt;/p&gt;&lt;/section&gt;
-&lt;section&gt;&lt;h2&gt;🚀 技术架构&lt;a href=&quot;#-技术架构&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;静态站点生成&lt;/strong&gt;: 基于 Astro ，提供极快的加载速度和优秀的 SEO 优化&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;TypeScript 支持&lt;/strong&gt;: 完整的类型安全，提升开发体验和代码质量&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;响应式设计&lt;/strong&gt;: 使用 Tailwind CSS 构建，完美适配桌面端和移动端&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;组件化开发&lt;/strong&gt;: 支持 Astro、Svelte 组件，灵活可扩展&lt;/li&gt;
-&lt;/ul&gt;&lt;/section&gt;
-&lt;section&gt;&lt;h2&gt;📖 配置说明&lt;a href=&quot;#-配置说明&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;blockquote&gt;&lt;p&gt;📚 &lt;strong&gt;详细配置文档&lt;/strong&gt;: 查看 &lt;a href=&quot;https://docs-firefly.cuteleaf.cn/&quot; target=&quot;_blank&quot;&gt;Firefly使用文档&lt;/a&gt; 获取完整的配置指南&lt;/p&gt;&lt;/blockquote&gt;&lt;/section&gt;</content:encoded></item><item><title>KaTeX 数学公式示例</title><link>https://l-lty.github.io/Leoblog/posts/katex-math-example/</link><guid isPermaLink="true">https://l-lty.github.io/Leoblog/posts/katex-math-example/</guid><description>展示 Firefly 主题对 KaTeX 数学公式的支持，包括行内公式、块级公式和复杂数学符号。</description><pubDate>Fri, 02 Jan 1970 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;本文展示了 &lt;a href=&quot;https://github.com/CuteLeaf/Firefly&quot; target=&quot;_blank&quot;&gt;Firefly&lt;/a&gt; 主题对 KaTeX 数学公式的渲染支持。&lt;/p&gt;
+&lt;/ul&gt;&lt;/section&gt;</content:encoded></item><item><title>Firefly 文章加密</title><link>https://l-lty.github.io/Leoblog/posts/encrypted-demo/</link><guid isPermaLink="true">https://l-lty.github.io/Leoblog/posts/encrypted-demo/</guid><description>这是一篇密码保护的示例文章，用于演示文章加密功能。</description><pubDate>Fri, 02 Jan 1970 00:00:00 GMT</pubDate><content:encoded>本文已加密保护，请访问网站查看。</content:encoded></item><item><title>KaTeX 数学公式示例</title><link>https://l-lty.github.io/Leoblog/posts/katex-math-example/</link><guid isPermaLink="true">https://l-lty.github.io/Leoblog/posts/katex-math-example/</guid><description>展示 Firefly 主题对 KaTeX 数学公式的支持，包括行内公式、块级公式和复杂数学符号。</description><pubDate>Fri, 02 Jan 1970 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;本文展示了 &lt;a href=&quot;https://github.com/CuteLeaf/Firefly&quot; target=&quot;_blank&quot;&gt;Firefly&lt;/a&gt; 主题对 KaTeX 数学公式的渲染支持。&lt;/p&gt;
 &lt;section&gt;&lt;h2&gt;行内公式 (Inline)&lt;a href=&quot;#行内公式-inline&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;行内公式使用单个 &lt;code&gt;$&lt;/code&gt; 符号包裹。&lt;/p&gt;&lt;p&gt;例如：欧拉公式 &lt;span&gt;&lt;span&gt;eiπ+1=0e^{i\pi} + 1 = 0&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;e&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;iπ&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;+&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;1&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;=&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;0&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt; 是数学中最优美的公式之一。&lt;/p&gt;&lt;p&gt;质能方程 &lt;span&gt;&lt;span&gt;E=mc2E = mc^2&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;E&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;=&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;m&lt;/span&gt;&lt;span&gt;&lt;span&gt;c&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;2&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt; 也是家喻户晓。&lt;/p&gt;&lt;/section&gt;
 &lt;section&gt;&lt;h2&gt;块级公式 (Block)&lt;a href=&quot;#块级公式-block&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;块级公式使用两个 &lt;code&gt;$$&lt;/code&gt; 符号包裹，会居中显示。&lt;/p&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;∫−∞∞e−x2dx=π\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;∫&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;−&lt;/span&gt;&lt;span&gt;∞&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;∞&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;​&lt;/span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;e&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;−&lt;/span&gt;&lt;span&gt;&lt;span&gt;x&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;2&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;d&lt;/span&gt;&lt;span&gt;x&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;=&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;π&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;​&lt;/span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;x=−b±b2−4ac2ax = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;x&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;=&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;2&lt;/span&gt;&lt;span&gt;a&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;−&lt;/span&gt;&lt;span&gt;b&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;±&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;b&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;2&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;−&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;4&lt;/span&gt;&lt;span&gt;a&lt;/span&gt;&lt;span&gt;c&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;​&lt;/span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;​&lt;/span&gt;&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/section&gt;
 &lt;section&gt;&lt;h2&gt;复杂示例&lt;a href=&quot;#复杂示例&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;section&gt;&lt;h3&gt;矩阵 (Matrices)&lt;a href=&quot;#矩阵-matrices&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h3&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;(abcd)(αβγδ)=(aα+bγaβ+bδcα+dγcβ+dδ)\begin{pmatrix}
@@ -1497,7 +2080,14 @@ c\alpha + d\gamma &amp;amp; c\beta + d\delta
 
 
 
-&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;符号&lt;/th&gt;&lt;th&gt;代码&lt;/th&gt;&lt;th&gt;渲染结果&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;Alpha&lt;/td&gt;&lt;td&gt;&lt;code&gt;\alpha&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;span&gt;&lt;span&gt;α\alpha&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;α&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Beta&lt;/td&gt;&lt;td&gt;&lt;code&gt;\beta&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;span&gt;&lt;span&gt;β\beta&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;β&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Gamma&lt;/td&gt;&lt;td&gt;&lt;code&gt;\Gamma&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;span&gt;&lt;span&gt;Γ\Gamma&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;Γ&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Pi&lt;/td&gt;&lt;td&gt;&lt;code&gt;\pi&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;span&gt;&lt;span&gt;π\pi&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;π&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Infinity&lt;/td&gt;&lt;td&gt;&lt;code&gt;\infty&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;span&gt;&lt;span&gt;∞\infty&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;∞&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Right Arrow&lt;/td&gt;&lt;td&gt;&lt;code&gt;\rightarrow&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;span&gt;&lt;span&gt;→\rightarrow&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;→&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Partial&lt;/td&gt;&lt;td&gt;&lt;code&gt;\partial&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;span&gt;&lt;span&gt;∂\partial&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;∂&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;p&gt;更多 KaTeX 语法请参考 &lt;a href=&quot;https://katex.org/docs/supported.html&quot; target=&quot;_blank&quot;&gt;KaTeX Supported Functions&lt;/a&gt;。&lt;/p&gt;&lt;/section&gt;</content:encoded></item><item><title>MDX 格式文章示例</title><link>https://l-lty.github.io/Leoblog/posts/mdx-example/</link><guid isPermaLink="true">https://l-lty.github.io/Leoblog/posts/mdx-example/</guid><description>这是一个 MDX 格式的示例文章，展示了如何在 Markdown 中使用 JSX。</description><pubDate>Fri, 02 Jan 1970 00:00:00 GMT</pubDate><content:encoded>&lt;div&gt;&lt;div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&gt;Tip&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/CuteLeaf/Firefly&quot; target=&quot;_blank&quot;&gt;Firefly&lt;/a&gt; 支持 &lt;code&gt;MDX&lt;/code&gt; 和 &lt;code&gt;Markdown&lt;/code&gt; 两种类型的文章，你可以在文章中混合使用两种格式，如果没有特别复杂内容和需求，推荐使用 Markdown 格式就够了。&lt;/p&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;符号&lt;/th&gt;&lt;th&gt;代码&lt;/th&gt;&lt;th&gt;渲染结果&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;Alpha&lt;/td&gt;&lt;td&gt;&lt;code&gt;\alpha&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;span&gt;&lt;span&gt;α\alpha&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;α&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Beta&lt;/td&gt;&lt;td&gt;&lt;code&gt;\beta&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;span&gt;&lt;span&gt;β\beta&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;β&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Gamma&lt;/td&gt;&lt;td&gt;&lt;code&gt;\Gamma&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;span&gt;&lt;span&gt;Γ\Gamma&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;Γ&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Pi&lt;/td&gt;&lt;td&gt;&lt;code&gt;\pi&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;span&gt;&lt;span&gt;π\pi&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;π&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Infinity&lt;/td&gt;&lt;td&gt;&lt;code&gt;\infty&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;span&gt;&lt;span&gt;∞\infty&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;∞&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Right Arrow&lt;/td&gt;&lt;td&gt;&lt;code&gt;\rightarrow&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;span&gt;&lt;span&gt;→\rightarrow&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;→&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Partial&lt;/td&gt;&lt;td&gt;&lt;code&gt;\partial&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;span&gt;&lt;span&gt;∂\partial&lt;/span&gt;&lt;span&gt;&lt;span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;∂&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;p&gt;更多 KaTeX 语法请参考 &lt;a href=&quot;https://katex.org/docs/supported.html&quot; target=&quot;_blank&quot;&gt;KaTeX Supported Functions&lt;/a&gt;。&lt;/p&gt;&lt;/section&gt;</content:encoded></item><item><title>Firefly 一款清新美观的 Astro 博客主题模板</title><link>https://l-lty.github.io/Leoblog/posts/firefly/</link><guid isPermaLink="true">https://l-lty.github.io/Leoblog/posts/firefly/</guid><description>Firefly 是一款基于 Astro 框架和 Fuwari 模板开发的清新美观且现代化个人博客主题模板，专为技术爱好者和内容创作者设计。该主题融合了现代 Web 技术栈，提供了丰富的功能模块和高度可定制的界面，让您能够轻松打造出专业且美观的个人博客网站。</description><pubDate>Fri, 02 Jan 1970 00:00:00 GMT</pubDate><content:encoded>&lt;section&gt;&lt;h2&gt;🌟 项目概述&lt;a href=&quot;#-项目概述&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Firefly&lt;/strong&gt; 是一款基于 Astro 框架和 Fuwari 模板开发的清新美观且现代化个人博客主题模板，专为技术爱好者和内容创作者设计。该主题融合了现代 Web 技术栈，提供了丰富的功能模块和高度可定制的界面，让您能够轻松打造出专业且美观的个人博客网站。&lt;/p&gt;&lt;p&gt;&lt;strong&gt;🖥️在线预览： &lt;a href=&quot;https://firefly.cuteleaf.cn/&quot;&gt;Firefly - Demo site&lt;/a&gt;&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;🏠我的博客： &lt;a href=&quot;https://blog.cuteleaf.cn/&quot; target=&quot;_blank&quot;&gt;https://blog.cuteleaf.cn&lt;/a&gt;&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;📝Firefly使用文档： &lt;a href=&quot;https://docs-firefly.cuteleaf.cn/&quot; target=&quot;_blank&quot;&gt;https://docs-firefly.cuteleaf.cn&lt;/a&gt;&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;⭐Firefly开源地址：&lt;a href=&quot;https://github.com/CuteLeaf/Firefly&quot; target=&quot;_blank&quot;&gt;https://github.com/CuteLeaf/Firefly&lt;/a&gt;&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;⭐Fuwari开源地址：&lt;a href=&quot;https://github.com/saicaca/fuwari&quot; target=&quot;_blank&quot;&gt;https://github.com/saicaca/fuwari&lt;/a&gt;&lt;/strong&gt;&lt;/p&gt;&lt;a href=&quot;https://github.com/CuteLeaf/Firefly&quot; target=&quot;_blank&quot;&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&gt;CuteLeaf&lt;/div&gt;&lt;/div&gt;&lt;div&gt;/&lt;/div&gt;&lt;div&gt;Firefly&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;Waiting for api.github.com...&lt;/div&gt;&lt;div&gt;&lt;div&gt;00K&lt;/div&gt;&lt;div&gt;0K&lt;/div&gt;&lt;div&gt;0K&lt;/div&gt;&lt;span&gt;Waiting...&lt;/span&gt;&lt;/div&gt;&lt;/a&gt;&lt;a href=&quot;https://github.com/saicaca/fuwari&quot; target=&quot;_blank&quot;&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&gt;saicaca&lt;/div&gt;&lt;/div&gt;&lt;div&gt;/&lt;/div&gt;&lt;div&gt;fuwari&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;Waiting for api.github.com...&lt;/div&gt;&lt;div&gt;&lt;div&gt;00K&lt;/div&gt;&lt;div&gt;0K&lt;/div&gt;&lt;div&gt;0K&lt;/div&gt;&lt;span&gt;Waiting...&lt;/span&gt;&lt;/div&gt;&lt;/a&gt;&lt;p&gt;&lt;/p&gt;&lt;figure&gt;&lt;img alt=&quot;Firefly&quot; loading=&quot;lazy&quot; width=&quot;2201&quot; height=&quot;1238&quot; src=&quot;/Leoblog/_astro/1.DzpFX8mf_BOiKh.webp&quot; /&gt;&lt;figcaption&gt;Firefly&lt;/figcaption&gt;&lt;/figure&gt;&lt;p&gt;&lt;/p&gt;&lt;/section&gt;
+&lt;section&gt;&lt;h2&gt;🚀 技术架构&lt;a href=&quot;#-技术架构&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;静态站点生成&lt;/strong&gt;: 基于 Astro ，提供极快的加载速度和优秀的 SEO 优化&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;TypeScript 支持&lt;/strong&gt;: 完整的类型安全，提升开发体验和代码质量&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;响应式设计&lt;/strong&gt;: 使用 Tailwind CSS 构建，完美适配桌面端和移动端&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;组件化开发&lt;/strong&gt;: 支持 Astro、Svelte 组件，灵活可扩展&lt;/li&gt;
+&lt;/ul&gt;&lt;/section&gt;
+&lt;section&gt;&lt;h2&gt;📖 配置说明&lt;a href=&quot;#-配置说明&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;blockquote&gt;&lt;p&gt;📚 &lt;strong&gt;详细配置文档&lt;/strong&gt;: 查看 &lt;a href=&quot;https://docs-firefly.cuteleaf.cn/&quot; target=&quot;_blank&quot;&gt;Firefly使用文档&lt;/a&gt; 获取完整的配置指南&lt;/p&gt;&lt;/blockquote&gt;&lt;/section&gt;</content:encoded></item><item><title>MDX 格式文章示例</title><link>https://l-lty.github.io/Leoblog/posts/mdx-example/</link><guid isPermaLink="true">https://l-lty.github.io/Leoblog/posts/mdx-example/</guid><description>这是一个 MDX 格式的示例文章，展示了如何在 Markdown 中使用 JSX。</description><pubDate>Fri, 02 Jan 1970 00:00:00 GMT</pubDate><content:encoded>&lt;div&gt;&lt;div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&gt;Tip&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/CuteLeaf/Firefly&quot; target=&quot;_blank&quot;&gt;Firefly&lt;/a&gt; 支持 &lt;code&gt;MDX&lt;/code&gt; 和 &lt;code&gt;Markdown&lt;/code&gt; 两种类型的文章，你可以在文章中混合使用两种格式，如果没有特别复杂内容和需求，推荐使用 Markdown 格式就够了。&lt;/p&gt;&lt;/div&gt;&lt;/div&gt;
 &lt;section&gt;&lt;h2&gt;Markdown 和 MDX 的区别&lt;a href=&quot;#markdown-和-mdx-的区别&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/a&gt;&lt;/h2&gt;&lt;ul&gt;
 &lt;li&gt;Markdown (MD) 是一种轻量级标记语言，允许用户使用纯文本格式编写文档，然后将其转换为格式化的HTML。它因其简洁易用的语法而广受欢迎，特别适合编写文档和博客文章。&lt;/li&gt;
 &lt;li&gt;MDX 是一种扩展了 Markdown 语法的格式，允许在 Markdown 文档中无缝地插入 JSX 代码。通过 MDX，用户可以在文档中嵌入 React 组件，从而实现更丰富的交互性和动态性。&lt;/li&gt;
